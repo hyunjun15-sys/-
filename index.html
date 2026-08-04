@@ -1,0 +1,1883 @@
+<!DOCTYPE html>
+<!-- saved from url=(0045)file:///C:/Users/user/Downloads/index_27.html -->
+<html lang="ko"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>배구 전술 보드</title>
+<link rel="preconnect" href="https://www.gstatic.com/">
+<link rel="preconnect" href="https://firestore.googleapis.com/">
+<style>
+  :root{
+    --line:#f5efe2;
+    --green:#1c4a41;
+    --green-dark:#123530;
+    --gold:#eab659;
+    --mid:#7fbf9e;
+    --navy:#5f89b8;
+    --opp:#c1443b;
+    --ink:#241c14;
+    --paper:#f7f1e4;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: var(--ink);
+    background-image:
+      radial-gradient(circle at 15% 10%, rgba(234,182,89,0.06), transparent 40%),
+      radial-gradient(circle at 85% 90%, rgba(28,74,65,0.15), transparent 45%);
+    color: var(--paper);
+    font-family: -apple-system, "Segoe UI", "Noto Sans KR", Roboto, sans-serif;
+    min-height:100vh;
+    padding: 28px 20px 48px;
+  }
+  .display{ font-family: "Arial Narrow", "Helvetica Neue Condensed", "Noto Sans KR", sans-serif; font-weight:800; letter-spacing:0.06em; text-transform:uppercase; }
+  .mono{ font-family: "SF Mono", "Consolas", "JetBrains Mono", monospace; font-variant-numeric: tabular-nums; }
+  .wrap{ max-width: 1400px; margin: 0 auto; }
+
+  header{ margin-bottom: 22px; }
+  header .eyebrow{ color: var(--gold); font-size:12px; letter-spacing:0.28em; margin-bottom:6px; }
+  header h1{ margin:0; font-size: clamp(28px,4vw,42px); line-height:1.05; color: var(--paper); }
+  header h1 span{ color: var(--gold); }
+  header p{ margin: 10px 0 0; color:#cbb99e; font-size:14.5px; max-width:680px; line-height:1.6; }
+
+  .board-layout{ display:grid; grid-template-columns: minmax(0,1fr) 320px; gap: 22px; align-items:start; }
+  @media (max-width: 1100px){ .board-layout{ grid-template-columns: 1fr; } }
+
+  .panel{ background: linear-gradient(180deg, #241c14, #1b150f); border: 1px solid #3a2e21; border-radius: 10px; padding: 18px; }
+
+  .mode-toggle{ display:flex; gap:8px; margin-bottom:16px; }
+  .mode-toggle button{
+    flex:1; border:1px solid #4a3b28; background:#2a2018; color:#e8dcc4;
+    padding:11px 10px; border-radius:8px; font-size:14px; font-weight:700;
+    letter-spacing:0.03em; cursor:pointer; transition: all .15s ease; font-family: inherit;
+  }
+  .mode-toggle button.active{ background: var(--gold); color:#241c14; border-color: var(--gold); }
+  .mode-toggle button small{ display:block; font-weight:400; font-size:11px; opacity:0.75; margin-top:2px; }
+
+  .scoreboard{
+    background: linear-gradient(180deg, var(--green), var(--green-dark));
+    border: 1px solid #0d2621; border-radius: 8px; padding: 14px 18px; margin-bottom: 16px;
+    display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
+    box-shadow: inset 0 0 24px rgba(0,0,0,0.35);
+  }
+  .scoreboard .item{ display:flex; flex-direction:column; gap:2px; }
+  .scoreboard .item label{ font-size:10.5px; letter-spacing:0.2em; color:#8fd6c2; text-transform:uppercase; }
+  .scoreboard .item .val{ font-size: 22px; color: var(--gold); text-shadow: 0 0 10px rgba(234,182,89,0.45); }
+
+  .control-group{ margin-bottom:16px; }
+  .control-group h3{ font-size:11px; letter-spacing:0.18em; color:#b79a6f; margin:0 0 8px; text-transform:uppercase; }
+  .btn-row{ display:flex; flex-wrap:wrap; gap:6px; }
+  .btn-row button{
+    border:1px solid #4a3b28; background: #2a2018; color:#e8dcc4;
+    padding:7px 12px; border-radius:6px; font-size:13px; cursor:pointer;
+    transition: all .15s ease; font-family: inherit;
+  }
+  .btn-row button:hover{ border-color: var(--gold); }
+  .btn-row button.active{ background: var(--gold); color: #241c14; border-color: var(--gold); font-weight:700; }
+  .btn-row.situations button{ flex:1 1 auto; min-width:110px; }
+  .btn-row.resets button:hover{ border-color: var(--opp); }
+
+  .sub-count-row{ display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+  .sub-count-row button{
+    width:32px; height:32px; border-radius:6px; border:1px solid #4a3b28;
+    background:#2a2018; color:#e8dcc4; font-size:16px; cursor:pointer; font-family:inherit;
+  }
+  .sub-count-row button:hover{ border-color: var(--gold); color: var(--gold); }
+  .sub-count-row span{ font-size:13px; color:#dcc79a; font-weight:700; min-width:70px; text-align:center; }
+
+  .court-wrap{ position:relative; }
+  .court-scroll{
+    width:100%; overflow:auto; border-radius:10px;
+  }
+  .court-wrap svg{
+    display:block; border-radius:10px;
+  }
+
+  .top-right-actions{
+    position:absolute; top:10px; right:10px; z-index:10;
+    display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;
+  }
+  .fullscreen-btn{
+    display:flex; align-items:center; gap:6px;
+    padding:8px 12px; border-radius:8px; border:1px solid #4a3b28;
+    background:rgba(36,28,20,0.85); color:#e8dcc4; font-size:13px; cursor:pointer;
+    font-family:inherit; backdrop-filter: blur(2px); white-space:nowrap;
+  }
+  .fullscreen-btn:hover{ border-color: var(--gold); color: var(--gold); }
+
+  .zoom-controls{
+    position:absolute; top:10px; left:10px; z-index:10;
+    display:flex; align-items:center; gap:4px;
+    padding:6px 8px; border-radius:8px; border:1px solid #4a3b28;
+    background:rgba(36,28,20,0.85); backdrop-filter: blur(2px);
+  }
+  .zoom-controls button{
+    width:28px; height:28px; border-radius:6px; border:1px solid #4a3b28;
+    background:#2a2018; color:#e8dcc4; font-size:15px; cursor:pointer; font-family:inherit;
+    display:flex; align-items:center; justify-content:center; line-height:1;
+  }
+  .zoom-controls button:hover{ border-color: var(--gold); color: var(--gold); }
+  .zoom-controls button:disabled{ opacity:0.4; cursor:default; }
+  .zoom-controls button:disabled:hover{ border-color:#4a3b28; color:#e8dcc4; }
+  .zoom-controls span{ font-size:12px; color:#cbb99e; width:42px; text-align:center; font-family:inherit; }
+
+  body.court-fullscreen{ overflow:hidden; }
+  body.court-fullscreen .court-wrap{
+    position:fixed; inset:0; z-index:2000;
+    background: var(--ink);
+    display:flex; align-items:center; justify-content:center;
+    padding:24px; border-radius:0;
+  }
+  body.court-fullscreen .zoom-controls{ top:20px; left:20px; }
+  body.court-fullscreen .top-right-actions{ top:20px; right:20px; }
+
+  .marker{ cursor: grab; touch-action: none; }
+  .marker .hit-area{ pointer-events: all; }
+  .rotate-handle-hit{ pointer-events: all; touch-action: none; cursor: grab; }
+  .marker.is-dragging .rotate-handle{ filter: drop-shadow(0 0 4px rgba(234,182,89,0.9)); }
+  .marker.is-dragging{ cursor: grabbing; }
+  .marker.is-dragging .token{ filter: drop-shadow(0 6px 10px rgba(0,0,0,0.55)); }
+
+  .hint{ margin-top:10px; font-size:12px; color:#9c8a6c; line-height:1.6; }
+  .hint b{ color:#dcc79a; }
+
+  .rule-note{
+    margin-top:10px; padding:10px 12px; border-radius:6px;
+    background:rgba(234,182,89,0.08); border:1px solid rgba(234,182,89,0.3);
+    font-size:12px; color:#e3cfa0; line-height:1.6;
+  }
+
+  .situation-title{ font-size:20px; color: var(--gold); margin: 0 0 6px; }
+  .situation-desc{ font-size:13.5px; color:#d8cbb0; line-height:1.7; margin: 0 0 14px; }
+  .role-list{ list-style:none; margin:0; padding:0; }
+  .role-list li{ display:flex; align-items:baseline; gap:10px; font-size:13px; color:#cbb99e; padding:6px 0; border-bottom: 1px dashed #3a2e21; }
+  .role-list li:last-child{ border-bottom:none; }
+  .role-list .num{ width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#241c14; flex:none; }
+
+  .opp-section{ margin-top:16px; padding-top:14px; border-top:1px solid #3a2e21; }
+  .opp-section h3{ font-size:11px; letter-spacing:0.18em; color:#c98077; margin:0 0 8px; text-transform:uppercase; }
+  .opp-note{ font-size:12.5px; color:#c9a98f; line-height:1.6; }
+  .opp-list{ list-style:none; margin:8px 0 0; padding:0; }
+  .opp-list li{ display:flex; align-items:center; gap:8px; font-size:12.5px; color:#dbb9ac; padding:4px 0; }
+  .opp-list .num{ width:18px; height:18px; border-radius:3px; color:#fff; display:flex; align-items:center; justify-content:center; font-size:10.5px; font-weight:700; flex:none; }
+
+  .tactic-row{ display:flex; align-items:center; gap:6px; margin-bottom:6px; }
+  .tactic-row .tactic-load{
+    flex:1; text-align:left; border:1px solid #4a3b28; background:#2a2018; color:#e8dcc4;
+    padding:8px 10px; border-radius:6px; font-size:13px; cursor:pointer; font-family:inherit;
+  }
+  .tactic-row .tactic-load:hover{ border-color: var(--gold); }
+  .tactic-row .icon-btn{
+    width:30px; height:34px; flex:none; border:1px solid #4a3b28; background:#2a2018;
+    color:#cbb99e; border-radius:6px; cursor:pointer; font-size:13px;
+  }
+  .tactic-row .icon-btn:hover{ border-color: var(--gold); color:var(--gold); }
+  .tactic-empty{ font-size:12.5px; color:#9c8a6c; line-height:1.6; }
+  .save-tactic-btn{
+    width:100%; padding:10px; border-radius:6px; border:1px dashed #5a4a34; background:transparent;
+    color:#dcc79a; font-size:13px; cursor:pointer; margin-bottom:10px; font-family:inherit;
+  }
+  .save-tactic-btn:hover{ border-color: var(--gold); color: var(--gold); }
+
+  .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; z-index:3000; padding:20px; }
+  .modal-backdrop.show{ display:flex; }
+
+  .admin-bar{
+    display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;
+    margin-bottom:18px; padding:10px 14px; border:1px solid #3a2e21; border-radius:8px;
+    background:#1f1810; font-size:12.5px; color:#b79a6f;
+  }
+  .admin-bar .admin-on{ color: var(--mid); font-weight:700; }
+  .admin-bar-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+  .bar-btn{
+    border:1px solid #4a3b28; background:#2a2018; color:#e8dcc4; padding:7px 12px;
+    border-radius:6px; font-size:12.5px; cursor:pointer; font-family:inherit;
+  }
+  .bar-btn:hover{ border-color: var(--gold); }
+
+  .storage-status{
+    font-size:11.5px; color:#9c8a6c; margin:-10px 0 18px; padding:0 2px;
+    display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+  }
+  .storage-status .dot{ width:7px; height:7px; border-radius:50%; flex:none; }
+  .storage-status .dot.on{ background: var(--mid); }
+  .storage-status .dot.off{ background:#8a7860; }
+  .lock-note{ font-size:11.5px; color:#9c8a6c; margin-top:2px; }
+
+  .team-select-panel{ max-width:520px; margin:0 auto; }
+  .team-select-row{ display:flex; align-items:center; gap:6px; margin-bottom:8px; }
+  .team-select-btn{
+    flex:1; text-align:left; border:1px solid #4a3b28; background:#2a2018; color:#f0e4cc;
+    padding:14px 16px; border-radius:8px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit;
+  }
+  .team-select-btn:hover{ border-color:var(--gold); color:var(--gold); }
+  .team-select-row .icon-btn{
+    width:34px; height:48px; flex:none; border:1px solid #4a3b28; background:#2a2018;
+    color:#cbb99e; border-radius:6px; cursor:pointer; font-size:13px;
+  }
+  .team-select-row .icon-btn:hover{ border-color: var(--gold); color:var(--gold); }
+  .add-team-row{ display:flex; gap:8px; margin-top:14px; padding-top:14px; border-top:1px solid #3a2e21; }
+  .add-team-row input{
+    flex:1; padding:10px; border-radius:6px; border:1px solid #4a3b28; background:#1b150f; color:#f7f1e4; font-size:14px;
+  }
+  .add-team-row button{
+    border:1px solid #4a3b28; background:#2a2018; color:#e8dcc4; padding:10px 14px;
+    border-radius:6px; font-size:13px; cursor:pointer; font-family:inherit; flex:none;
+  }
+  .add-team-row button:hover{ border-color:var(--gold); }
+
+  .team-bar{ display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+  .team-bar button{
+    border:1px solid #4a3b28; background:#2a2018; color:#e8dcc4; padding:8px 14px;
+    border-radius:6px; font-size:13px; cursor:pointer; font-family:inherit;
+  }
+  .team-bar button:hover{ border-color: var(--gold); }
+  .current-team-label{ font-size:14px; font-weight:700; color: var(--gold); }
+  .modal-card{ background:#241c14; border:1px solid #4a3b28; border-radius:10px; padding:20px; width:100%; max-width:300px; }
+  .modal-card h3{ margin:0 0 14px; font-size:16px; color:var(--gold); }
+  .modal-card label{ display:block; font-size:12px; color:#cbb99e; margin-bottom:14px; }
+  .modal-card input[type=text]{ width:100%; margin-top:6px; padding:9px; border-radius:6px; border:1px solid #4a3b28; background:#1b150f; color:#f7f1e4; font-size:14px; }
+  .modal-card input[type=color]{ width:100%; margin-top:6px; height:40px; border:1px solid #4a3b28; border-radius:6px; background:#1b150f; cursor:pointer; padding:2px; }
+  .modal-actions{ display:flex; gap:8px; margin-top:4px; flex-wrap:wrap; }
+  .modal-actions button{ flex:1 1 auto; padding:9px; border-radius:6px; border:1px solid #4a3b28; background:#2a2018; color:#e8dcc4; cursor:pointer; font-size:13px; font-family:inherit; }
+  .modal-actions button.primary{ background:var(--gold); color:#241c14; border-color:var(--gold); font-weight:700; }
+
+  .help-card{ max-width:560px; width:100%; max-height:82vh; display:flex; flex-direction:column; }
+  .help-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; flex:none; }
+  .help-header h3{ margin:0; }
+  .icon-close{
+    width:30px; height:30px; border-radius:6px; border:1px solid #4a3b28; background:#2a2018;
+    color:#cbb99e; font-size:18px; cursor:pointer; line-height:1; flex:none;
+  }
+  .icon-close:hover{ border-color: var(--gold); color: var(--gold); }
+  .help-body{ overflow-y:auto; padding-right:4px; }
+  .help-section{ margin-bottom:18px; }
+  .help-section:last-child{ margin-bottom:0; }
+  .help-section h4{ margin:0 0 8px; font-size:13.5px; color: var(--gold); }
+  .help-section ul{ margin:0; padding-left:18px; }
+  .help-section li{ font-size:12.5px; color:#d8cbb0; line-height:1.65; margin-bottom:6px; }
+  .help-section li:last-child{ margin-bottom:0; }
+  .help-section code{
+    background:#1b150f; border:1px solid #3a2e21; border-radius:4px; padding:1px 6px;
+    font-family:'SF Mono',Consolas,monospace; font-size:11.5px; color:#f0dcae;
+  }
+
+  footer{ margin-top: 22px; text-align:center; color:#6f6250; font-size:11.5px; }
+
+  #preloadOverlay{
+    position:fixed; inset:0; z-index:9999; background: var(--ink);
+    display:flex; align-items:center; justify-content:center;
+    transition: opacity 0.3s ease;
+  }
+  #preloadOverlay.hide{ opacity:0; pointer-events:none; }
+  .preload-box{ display:flex; flex-direction:column; align-items:center; gap:16px; }
+  .preload-spinner{
+    width:36px; height:36px; border-radius:50%;
+    border:3px solid #3a2e21; border-top-color: var(--gold);
+    animation: preload-spin 0.8s linear infinite;
+  }
+  @keyframes preload-spin{ to{ transform: rotate(360deg); } }
+  .preload-text{ color:#cbb99e; font-size:13.5px; letter-spacing:0.05em; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow display">VOLLEYBALL TACTICS BOARD</div>
+    <h1 class="display">배구 전술 보드 <span>·</span> 자유 배치 &amp; 전술 저장</h1>
+    <p id="headerDesc">소속 팀을 선택하면 그 팀의 전술판으로 들어갑니다. 관리자는 모든 팀의 전술을 관리할 수 있어요.</p>
+  </header>
+
+  <div class="admin-bar">
+    <span id="adminStatusText">누구나 선수·공 위치를 바꿔볼 수 있어요. 전술 저장/수정은 관리자만 가능합니다.</span>
+    <div class="admin-bar-actions">
+      <button id="helpBtn" class="bar-btn">❓ 이용방법</button>
+      <div class="admin-bar-actions" id="adminBarActions" style="display:contents;"><button class="bar-btn">관리자 로그인</button></div>
+    </div>
+  </div>
+  <div class="storage-status" id="storageStatus"><span class="dot on"></span> Firebase 연결됨 — 다른 기기·다른 브라우저에서도 같은 데이터를 봐요.</div>
+
+  <div id="teamSelectScreen">
+    <div class="panel team-select-panel">
+      <h2 class="situation-title display">팀 선택</h2>
+      <p class="situation-desc">전술을 확인하거나 연습할 팀을 선택하세요.</p>
+      <div id="teamSelectList"><div class="team-select-row"><button class="team-select-btn">송림초 남자 🔒</button></div><div class="team-select-row"><button class="team-select-btn">송림초 여자 🔒</button></div><div class="team-select-row"><button class="team-select-btn">공주교대동문회 🔒</button></div></div>
+      <div id="addTeamRow" class="add-team-row" style="display:none;">
+        <input type="text" id="newTeamName" placeholder="새 팀 이름 (예: U15팀)">
+        <input type="password" id="newTeamPassword" placeholder="비밀번호(선택)">
+        <button id="addTeamBtn">+ 팀 추가</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="mainScreen" style="display:none;">
+    <div class="team-bar">
+      <button id="backToTeamsBtn">← 팀 선택으로</button>
+      <span class="current-team-label" id="currentTeamLabel"></span>
+    </div>
+
+  <div class="board-layout">
+    <div>
+      <div class="panel">
+
+        <div class="mode-toggle" id="modeToggle"></div>
+
+        <div class="scoreboard">
+          <div class="item"><label>MODE</label><div class="val mono" id="scoreMode">9인제</div></div>
+          <div class="item" id="rotationScoreItem"><label>ROTATION</label><div class="val mono" id="scoreRotation">1</div></div>
+          <div class="item"><label>SITUATION</label><div class="val mono" id="scoreSituation">SERVE</div></div>
+          <div class="item" id="serverScoreItem"><label>SERVER</label><div class="val mono" id="scoreServer">#1</div></div>
+        </div>
+
+        <div class="control-group" id="rotationGroup">
+          <h3>로테이션 선택 (서브 순서)</h3>
+          <div class="btn-row" id="rotationBtns"></div>
+        </div>
+
+        <div class="control-group">
+          <h3>상황 선택 (시작 템플릿)</h3>
+          <div class="btn-row situations" id="situationBtns"></div>
+        </div>
+
+        <div class="court-wrap" id="courtWrap">
+          <div class="top-right-actions">
+            <button id="landscapeBtn" class="fullscreen-btn" title="PC에서 가로로 크게 보기">⤢ 가로로 보기</button>
+            <button id="fullscreenBtn" class="fullscreen-btn" title="전체화면으로 크게 보기">⛶ 전체화면</button>
+          </div>
+          <div class="zoom-controls">
+            <button id="zoomOutBtn" title="축소">－</button>
+            <span id="zoomLabel">100%</span>
+            <button id="zoomInBtn" title="확대">＋</button>
+            <button id="zoomResetBtn" title="원래 크기로">↺</button>
+          </div>
+          <div class="court-scroll" id="courtScroll">
+            <svg id="court" viewBox="0 0 740 1212" xmlns="http://www.w3.org/2000/svg"></svg>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <h3>교체 선수 명단</h3>
+          <div class="sub-count-row">
+            <button id="subRemoveBtn" title="교체선수 한 명 빼기">－</button>
+            <span id="subCountLabel">0 / 10명</span>
+            <button id="subAddBtn" title="교체선수 한 명 추가">＋</button>
+          </div>
+          <div class="lock-note">교체선수를 추가하면 코트 왼쪽에 나타나요. 0명이면 화면에 표시되지 않아요.</div>
+        </div>
+
+        <div class="control-group" style="margin-top:12px;">
+          <div class="btn-row resets">
+            <button id="resetUs">우리 팀 위치 초기화</button>
+            <button id="resetOpp">상대 팀 위치 초기화</button>
+            <button id="resetSub">교체선수 위치 초기화</button>
+            <button id="resetBall">공 위치 초기화</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <h3>저장된 전술</h3>
+          <button class="save-tactic-btn" id="saveTacticBtn">+ 현재 배치를 새 전술로 저장</button>
+          <div class="lock-note" id="tacticLockNote" style="display:none;">전술 저장·수정은 관리자만 가능해요. 위 버튼을 누르면 로그인할 수 있어요.</div>
+          <div id="tacticList"></div>
+        </div>
+
+        <div class="hint">
+          <b>사용법</b> — 원(우리 팀) · 사각형(상대 팀) · 오각형(교체 선수) · 공을 눌러서 끌면 그대로 따라 움직여요. 토큰 위쪽 이름 위에 있는 <b>흰 점</b>을 끌면 선수가 바라보는 방향이 바뀌어요 — 안에 적힌 번호/이름이 회전된 정도가 바로 그 방향이에요. 그 외 부분을 끌면 위치가 이동해요. 교체 선수는 "교체 선수 명단"에서 인원을 추가해야 코트 왼쪽에 나타나요 (기본은 0명). 더블클릭하면 이름/색상을 편집할 수 있어요(관리자만 가능, 공은 예외로 누구나 더블클릭하면 가운데로 되돌아갑니다). 코트는 항상 화면 너비에 꽉 차게 표시돼요 — 가로 화면처럼 세로 공간이 부족하면 코트 영역 안에서 위아래로 스크롤해서 나머지를 볼 수 있어요. 왼쪽 위 ＋/－ 버튼이나 Ctrl(트랙패드 핀치)+스크롤로 추가 확대·축소도 가능해요. 로테이션/상황을 바꾸면 우리 팀은 해당 템플릿 배치로 돌아갑니다.
+        </div>
+        <div class="rule-note" id="ruleNote" style="display:none;"></div>
+      </div>
+    </div>
+
+    <div class="panel" id="sidePanel"></div>
+  </div>
+
+  <footer>배구 지도용 전술 시각화 도구 · 실제 경기 규칙 및 소속 리그 규정과 다를 수 있으며, 코칭 설명을 돕기 위한 예시 대형입니다.</footer>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="editModal">
+  <div class="modal-card">
+    <h3 id="editModalTitle">선수 편집</h3>
+    <label>이름
+      <input type="text" id="editName" placeholder="예: 홍길동">
+    </label>
+    <label>색상
+      <input type="color" id="editColor">
+    </label>
+    <div class="modal-actions">
+      <button id="editSave" class="primary">저장</button>
+      <button id="editResetBtn">기본값으로</button>
+      <button id="editCancel">취소</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="loginModal">
+  <div class="modal-card">
+    <h3>관리자 로그인</h3>
+    <label>비밀번호
+      <input type="password" id="loginPassword" placeholder="비밀번호 입력">
+    </label>
+    <div class="lock-note" id="loginHint"></div>
+    <div class="modal-actions">
+      <button id="loginSubmit" class="primary">로그인</button>
+      <button id="loginCancel">취소</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="teamPasswordModal">
+  <div class="modal-card">
+    <h3 id="teamPasswordTitle">팀 비밀번호</h3>
+    <label>비밀번호
+      <input type="password" id="teamPasswordInput" placeholder="비밀번호 입력">
+    </label>
+    <div class="lock-note" id="teamPasswordHint"></div>
+    <div class="modal-actions">
+      <button id="teamPasswordSubmit" class="primary">입장</button>
+      <button id="teamPasswordCancel">취소</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="pwModal">
+  <div class="modal-card">
+    <h3>비밀번호 변경</h3>
+    <label>새 비밀번호
+      <input type="password" id="pwNew" placeholder="4자 이상">
+    </label>
+    <label>새 비밀번호 확인
+      <input type="password" id="pwConfirm">
+    </label>
+    <div class="modal-actions">
+      <button id="pwSave" class="primary">저장</button>
+      <button id="pwCancel">취소</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="firebaseModal">
+  <div class="modal-card" style="max-width:420px;">
+    <h3>Firebase 연결</h3>
+    <p style="font-size:12.5px; color:#cbb99e; line-height:1.6; margin:-6px 0 14px;">
+      기본적으로 모든 기기가 같은 Firebase 프로젝트를 공유하도록 이미 연결되어 있어요.
+      다른 Firebase 프로젝트를 쓰고 싶을 때만 아래에 새 <b>firebaseConfig 객체</b>를 붙여넣고 저장하세요.
+    </p>
+    <label>firebaseConfig (JSON)
+      <textarea id="firebaseConfigInput" rows="8" placeholder="{
+  &quot;apiKey&quot;: &quot;...&quot;,
+  &quot;authDomain&quot;: &quot;...&quot;,
+  &quot;projectId&quot;: &quot;...&quot;,
+  ...
+}" style="width:100%; margin-top:6px; padding:9px; border-radius:6px; border:1px solid #4a3b28; background:#1b150f; color:#f7f1e4; font-size:12.5px; font-family:&#39;SF Mono&#39;,Consolas,monospace; resize:vertical;"></textarea>
+    </label>
+    <div class="lock-note" id="firebaseHint"></div>
+    <div class="modal-actions">
+      <button id="firebaseSave" class="primary">저장하고 연결</button>
+      <button id="firebaseDisconnect">기본값으로 되돌리기</button>
+      <button id="firebaseCancel">취소</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="helpModal">
+  <div class="modal-card help-card">
+    <div class="help-header">
+      <h3>이용방법</h3>
+      <button id="helpClose" class="icon-close" title="닫기">×</button>
+    </div>
+    <div class="help-body">
+
+      <div class="help-section">
+        <h4>🏐 시작하기</h4>
+        <ul>
+          <li>처음 들어오면 <b>팀 선택 화면</b>이 나와요. 원하는 팀을 눌러 들어가세요.</li>
+          <li>팀에 자물쇠(🔒) 표시가 있으면 비밀번호가 필요해요 (기본 비밀번호: <code>1234</code>).</li>
+          <li><b>관리자로 로그인</b>하면 비밀번호 없이 모든 팀에 들어갈 수 있고, 팀 추가/이름변경/삭제·비밀번호 설정도 할 수 있어요 (관리자 기본 비밀번호: <code>coach1234</code>).</li>
+        </ul>
+      </div>
+
+      <div class="help-section">
+        <h4>🧭 코트 화면 조작</h4>
+        <ul>
+          <li><b>6인제 / 9인제</b> 버튼으로 방식을 바꿀 수 있어요. 9인제는 로테이션이 없어요.</li>
+          <li><b>로테이션</b>, <b>상황(서브·리시브·공격·블로킹·수비)</b> 버튼을 누르면 정해진 기본 대형으로 이동해요.</li>
+          <li>코트 왼쪽 위 <b>＋ / － 버튼</b>이나 <b>Ctrl+스크롤(트랙패드 핀치)</b>로 확대·축소할 수 있어요.</li>
+          <li><b>⤢ 가로로 보기</b> — 코트를 90도 돌려서 넓은 화면(PC)에 맞게 볼 수 있어요.</li>
+          <li><b>⛶ 전체화면</b> — 코트만 화면 가득 크게 볼 수 있어요 (Esc로 나가기).</li>
+          <li>코트는 항상 화면 너비에 꽉 차게 나오고, 세로 공간이 부족하면 코트 안에서 스크롤해서 나머지를 봐요.</li>
+        </ul>
+      </div>
+
+      <div class="help-section">
+        <h4>🙋 선수 조작 (누구나 가능)</h4>
+        <ul>
+          <li><b>원</b> = 우리 팀, <b>사각형</b> = 상대 팀, <b>오각형</b> = 교체 선수, 흰 공 모양 = 공</li>
+          <li>토큰 위쪽 이름 위에 있는 <b>흰 점(방향 손잡이)</b>을 끌면 선수가 바라보는 방향이 바뀌어요. 그 외 부분을 끌면 위치가 이동해요.</li>
+          <li>상대 팀 위치를 먼저 배치해두고, 그에 맞춰 우리 팀 위치를 조정해보는 용도로 쓸 수 있어요.</li>
+          <li><b>교체 선수 명단</b>에서 ＋/－ 로 인원(0~10명)을 조절해요. 0명이면 화면에 안 보여요.</li>
+          <li>각 팀/공 옆의 "위치 초기화" 버튼으로 원래 자리로 되돌릴 수 있어요.</li>
+        </ul>
+      </div>
+
+      <div class="help-section">
+        <h4>🔒 관리자 전용 기능</h4>
+        <ul>
+          <li>선수·상대팀·교체선수 토큰을 <b>더블클릭</b>하면 이름과 색상을 바꿀 수 있어요.</li>
+          <li><b>전술 저장</b> — 원하는 대형을 만든 뒤 "+ 현재 배치를 새 전술로 저장"으로 이름 붙여 저장. 위치와 방향, 교체 인원까지 함께 저장돼요.</li>
+          <li>저장된 전술은 <b>누구나 클릭해서 불러올 수 있지만</b>, 이름 변경(✎)·삭제(×)·새로 저장하는 건 관리자만 가능해요.</li>
+          <li><b>비밀번호 변경</b> — 관리자 비밀번호를 원하는 값으로 바꿀 수 있어요.</li>
+          <li><b>Firebase 연결</b> — 연결하면 다른 기기·다른 브라우저에서도 같은 데이터를 볼 수 있어요.</li>
+        </ul>
+      </div>
+
+      <div class="help-section">
+        <h4>💾 데이터 저장 안내</h4>
+        <ul>
+          <li>화면 위쪽의 작은 점 표시로 지금 데이터가 어떻게 저장되는지 알 수 있어요.</li>
+          <li><span style="color:var(--mid);">●</span> Firebase 연결됨 / Claude 공유 저장소 — 누구나 같은 데이터를 봐요.</li>
+          <li><span style="color:#8a7860;">●</span> 이 브라우저에만 저장 — 다른 기기와 공유되지 않아요.</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="./배구 전술 보드_files/firebase-app-compat.js.다운로드"></script>
+<script src="./배구 전술 보드_files/firebase-firestore-compat.js.다운로드"></script>
+
+<script>
+
+(function(){
+  // ============================================================
+  // 좌표 체계
+  // ============================================================
+  const MARGIN_TOP = 80, COURT_DEPTH = 520, NET_THICK = 12, MARGIN_BOTTOM = 80;
+  const SIDE_L = 130, SIDE_R = 610;
+  const OPP_TOP = MARGIN_TOP;
+  const OPP_BOTTOM = OPP_TOP + COURT_DEPTH;
+  const NET_Y1 = OPP_BOTTOM;
+  const NET_Y2 = NET_Y1 + NET_THICK;
+  const OUR_TOP = NET_Y2;
+  const OUR_BOTTOM = OUR_TOP + COURT_DEPTH;
+  const NET_CENTER = (NET_Y1 + NET_Y2) / 2;
+  const VIEW_H = OUR_BOTTOM + MARGIN_BOTTOM;
+  const VIEW_W = SIDE_R + SIDE_L;
+
+  const OUR_ATTACK_Y = OUR_TOP + COURT_DEPTH/3;
+  const OUR_ROW2_Y   = OUR_TOP + COURT_DEPTH*2/3;
+  const OPP_ATTACK_Y = OPP_BOTTOM - COURT_DEPTH/3;
+  const OPP_ROW2_Y   = OPP_BOTTOM - COURT_DEPTH*2/3;
+  const DEFAULT_BALL = { x: (SIDE_L+SIDE_R)/2, y: NET_CENTER };
+  const MAX_SUB = 10;
+  const SUB_X = 60;
+  const PENTAGON_PATH = "M 0,-20 L 19,-6.2 L 11.8,16.2 L -11.8,16.2 L -19,-6.2 Z";
+
+  function mirrorY(y){ return 2*NET_CENTER - y; }
+  function mirrorBase(base){
+    const out = {};
+    for(const z in base){ out[z] = { x: base[z].x, y: mirrorY(base[z].y) }; }
+    return out;
+  }
+
+  // ---------- CONFIG: 6인제 ----------
+  const BASE_6 = {
+    1: {x:530, y:958}, 2: {x:530, y:698}, 3: {x:370, y:698},
+    4: {x:210, y:698}, 5: {x:210, y:958}, 6: {x:370, y:958},
+  };
+  const TIERS_6 = { front:[2,3,4], back:[1,5,6] };
+  const SITUATIONS_6 = {
+    serve: { label:"서브", short:"SERVE",
+      offsets:{1:{dx:20,dy:60},2:{dx:0,dy:0},3:{dx:0,dy:0},4:{dx:0,dy:0},5:{dx:0,dy:0},6:{dx:0,dy:0}},
+      desc:"서브를 넣는 선수는 엔드라인 뒤에서 자유롭게 서고, 나머지 5명은 로테이션 순서를 지키는 정위치에서 대기합니다.",
+      roles:{1:"서버",2:"프론트 우측",3:"프론트 센터",4:"프론트 좌측",5:"백 좌측",6:"백 센터"} },
+    receive: { label:"서브 리시브", short:"RECEIVE",
+      offsets:{1:{dx:-40,dy:-40},2:{dx:20,dy:0},3:{dx:60,dy:-40},4:{dx:-20,dy:0},5:{dx:40,dy:-40},6:{dx:0,dy:-60}},
+      desc:"후위 3명이 반달 대형으로 서브를 받고, 세터는 네트 쪽으로 먼저 이동합니다. 상대 서버 위치에 맞춰 좌우로 조정하세요.",
+      roles:{1:"백 우측 · 리시브",2:"프론트 우측 · 공격 준비",3:"세터",4:"프론트 좌측 · 공격 준비",5:"백 좌측 · 리시브",6:"백 센터 · 리시브"} },
+    attack: { label:"공격 전환", short:"ATTACK",
+      offsets:{1:{dx:20,dy:20},2:{dx:10,dy:-30},3:{dx:50,dy:-70},4:{dx:-10,dy:-30},5:{dx:-20,dy:20},6:{dx:0,dy:40}},
+      desc:"세터가 네트 중앙-우측으로 이동해 세트를 올리고, 공격수들이 네트로 붙습니다. 상대 블로커 위치를 피해 조정하세요.",
+      roles:{1:"백 우측 · 커버",2:"라이트 · 공격 대기",3:"세터",4:"레프트 · 공격 대기",5:"백 좌측 · 커버",6:"백 센터 · 커버"} },
+    block: { label:"블로킹", short:"BLOCK",
+      offsets:{1:{dx:30,dy:80},2:{dx:0,dy:-56},3:{dx:0,dy:-56},4:{dx:0,dy:-56},5:{dx:-30,dy:80},6:{dx:0,dy:90}},
+      desc:"전위 3명이 네트에 붙어 블로킹 대형을 만들고, 후위는 넓고 깊게 수비합니다. 상대 공격수 위치에 맞춰 조정하세요.",
+      roles:{1:"백 우측 · 수비",2:"프론트 우측 · 블로킹",3:"프론트 센터 · 블로킹",4:"프론트 좌측 · 블로킹",5:"백 좌측 · 수비",6:"백 센터 · 리베로"} },
+    defense: { label:"수비", short:"DEFENSE",
+      offsets:{1:{dx:20,dy:40},2:{dx:0,dy:-20},3:{dx:0,dy:-50},4:{dx:0,dy:-20},5:{dx:-20,dy:40},6:{dx:0,dy:90}},
+      desc:"전위는 블로킹 여부를 판단하고, 리베로는 깊이 내려가 수비합니다. 상대 주공격수 방향으로 후위를 두껍게 만들어보세요.",
+      roles:{1:"백 우측 · 코너 수비",2:"프론트 우측 · 블로킹 대비",3:"프론트 센터 · 블로킹 판단",4:"프론트 좌측 · 블로킹 대비",5:"백 좌측 · 코너 수비",6:"리베로 · 중앙 수비"} },
+  };
+
+  // ---------- CONFIG: 9인제 (로테이션 없음) ----------
+  const BASE_9 = {
+    1: {x:530, y:1045}, 2: {x:370, y:1045}, 3: {x:210, y:1045},
+    4: {x:210, y:872}, 5: {x:370, y:872}, 6: {x:530, y:872},
+    7: {x:530, y:699}, 8: {x:370, y:699}, 9: {x:210, y:699},
+  };
+  const TIERS_9 = { front:[7,8,9], mid:[4,5,6], back:[1,2,3] };
+  const SITUATIONS_9 = {
+    serve: { label:"서브", short:"SERVE",
+      offsets:{1:{dx:15,dy:65},2:{dx:0,dy:0},3:{dx:0,dy:0},4:{dx:0,dy:0},5:{dx:0,dy:0},6:{dx:0,dy:0},7:{dx:0,dy:0},8:{dx:0,dy:0},9:{dx:0,dy:0}},
+      desc:"서브권을 가진 선수가 엔드라인 뒤에서 서브를 넣고, 나머지는 전위-중위-후위 3줄 정위치에서 대기합니다.",
+      roles:{1:"서버",2:"후위 중",3:"후위 좌",4:"중위 좌",5:"중위 중",6:"중위 우",7:"전위 우",8:"전위 중",9:"전위 좌"} },
+    receive: { label:"서브 리시브", short:"RECEIVE",
+      offsets:{1:{dx:-10,dy:-40},2:{dx:0,dy:-30},3:{dx:10,dy:-40},4:{dx:-10,dy:-10},5:{dx:60,dy:-90},6:{dx:10,dy:-10},7:{dx:10,dy:0},8:{dx:0,dy:0},9:{dx:-10,dy:0}},
+      desc:"후위 3명이 리시브 라인을 만들고, 중위 센터가 세트를 위해 네트 쪽으로 붙습니다. 상대 서버 위치에 맞춰 조정하세요.",
+      roles:{1:"후위 우 · 리시브",2:"후위 중 · 리시브",3:"후위 좌 · 리시브",4:"중위 좌 · 보조",5:"세터 역할",6:"중위 우 · 보조",7:"전위 우 · 대기",8:"전위 중 · 대기",9:"전위 좌 · 대기"} },
+    attack: { label:"공격 전환", short:"ATTACK",
+      offsets:{1:{dx:20,dy:20},2:{dx:0,dy:30},3:{dx:-20,dy:20},4:{dx:40,dy:-10},5:{dx:120,dy:-155},6:{dx:-40,dy:-10},7:{dx:10,dy:-20},8:{dx:0,dy:-20},9:{dx:-10,dy:-20}},
+      desc:"세터 역할이 네트 앞으로 올라가 세트를 올리고, 전위 3명이 공격합니다. 상대 블로커를 보고 조정하세요.",
+      roles:{1:"후위 우 · 커버",2:"후위 중 · 커버",3:"후위 좌 · 커버",4:"중위 좌 · 커버",5:"세터 역할",6:"중위 우 · 커버",7:"전위 우 · 공격",8:"전위 중 · 공격",9:"전위 좌 · 공격"} },
+    block: { label:"블로킹", short:"BLOCK",
+      offsets:{1:{dx:20,dy:40},2:{dx:0,dy:50},3:{dx:-20,dy:40},4:{dx:0,dy:40},5:{dx:0,dy:40},6:{dx:0,dy:40},7:{dx:0,dy:-57},8:{dx:0,dy:-57},9:{dx:0,dy:-57}},
+      desc:"전위 3명이 네트에 붙어 블로킹하고, 중위가 뒤에서 지원, 후위가 넓게 수비합니다. 상대 공격수 위치에 맞춰 조정하세요.",
+      roles:{1:"후위 우 · 수비",2:"후위 중 · 수비",3:"후위 좌 · 수비",4:"중위 좌 · 지원",5:"중위 중 · 지원",6:"중위 우 · 지원",7:"전위 우 · 블로킹",8:"전위 중 · 블로킹",9:"전위 좌 · 블로킹"} },
+    defense: { label:"수비", short:"DEFENSE",
+      offsets:{1:{dx:20,dy:30},2:{dx:0,dy:70},3:{dx:-20,dy:30},4:{dx:20,dy:20},5:{dx:0,dy:0},6:{dx:-20,dy:20},7:{dx:0,dy:-15},8:{dx:0,dy:-40},9:{dx:0,dy:-15}},
+      desc:"전위 중앙이 블로킹하고 양쪽은 반박자 늦게 움직입니다. 상대 주공격수 방향으로 후위를 두껍게 만들어보세요.",
+      roles:{1:"후위 우 · 코너 수비",2:"후위 중 · 중앙 수비",3:"후위 좌 · 코너 수비",4:"중위 좌 · 커버",5:"중위 중 · 커버",6:"중위 우 · 커버",7:"전위 우 · 대비",8:"전위 중 · 블로킹",9:"전위 좌 · 대비"} },
+  };
+
+  const CONFIGS = {
+    "6": { zoneCount:6, base:BASE_6, oppBase:mirrorBase(BASE_6), tiers:TIERS_6, situations:SITUATIONS_6, modeLabel:"6인제", modeSub:"실내 표준 규칙", hasRotation:true },
+    "9": { zoneCount:9, base:BASE_9, oppBase:mirrorBase(BASE_9), tiers:TIERS_9, situations:SITUATIONS_9, modeLabel:"9인제", modeSub:"동호인 3줄 대형 · 로테이션 없음", hasRotation:false },
+  };
+  const ORDER = ["serve","receive","attack","block","defense"];
+  const TIER_COLOR = { front:"#eab659", mid:"#7fbf9e", back:"#5f89b8" };
+  const DEFAULT_OPP_COLOR = "#c1443b";
+  const DEFAULT_SUB_COLOR = "#8a7860";
+
+  // ---------- State ----------
+  let currentTeam = null;
+  let teams = [];
+  let mode = "9";
+  let rotation = 0;
+  let situationKey = "serve";
+  let names = {}, oppNames = {}, subNames = {};
+  let colors = {}, oppColors = {}, subColors = {};
+  let manualPos = {}, oppManualPos = {}, subManualPos = {};
+  let manualAngle = {}, oppManualAngle = {}, subManualAngle = {}; // 선수가 바라보는 방향(도), 0=위쪽
+  let subCount = 0; // 실제로 코트에 표시할 교체선수 수 (0~MAX_SUB)
+  const DEFAULT_ANGLE = { us: 0, opp: 180, sub: 0 }; // 우리팀은 네트(위)쪽, 상대팀은 반대(아래)쪽을 기본으로
+  let ballPos = { ...DEFAULT_BALL };
+  let tactics = [];
+  let editing = null;   // { team, player }
+  let drag = null;      // { team, player, mode, offsetX, offsetY, el, startPoint }
+  let lastClick = null; // { team, player, time } - 수동 더블클릭 감지용
+  const CLICK_MOVE_THRESHOLD = 6;
+  const DOUBLE_CLICK_MS = 400;
+  let isAdmin = false;
+  let currentAdminHash = null;
+  const DEFAULT_ADMIN_PASSWORD = "coach1234";
+
+  const svg = document.getElementById("court");
+  const modeToggle = document.getElementById("modeToggle");
+  const rotationBtns = document.getElementById("rotationBtns");
+  const rotationGroup = document.getElementById("rotationGroup");
+  const rotationScoreItem = document.getElementById("rotationScoreItem");
+  const serverScoreItem = document.getElementById("serverScoreItem");
+  const situationBtns = document.getElementById("situationBtns");
+  const sidePanel = document.getElementById("sidePanel");
+  const ruleNote = document.getElementById("ruleNote");
+  const tacticListEl = document.getElementById("tacticList");
+
+  function cfg(){ return CONFIGS[mode]; }
+
+  // ---------- 저장소 우선순위: Firebase(기기간 공유) > Claude 저장소 > localStorage(이 기기만) ----------
+  const HAS_CLAUDE_STORAGE = typeof window.storage !== "undefined" && window.storage && typeof window.storage.get === "function";
+  const FIREBASE_CONFIG_KEY = "vb-board:firebase-config";
+  let firebaseDb = null;
+  let firebaseReady = false;
+
+  // 이 값이 있으면 모든 기기·브라우저에서 별도 설정 없이 자동으로 이 Firebase 프로젝트에 연결된다.
+  // (관리자 바의 "Firebase 연결하기"로 다른 프로젝트를 지정하면 그 설정이 우선 적용된다.)
+  const DEFAULT_FIREBASE_CONFIG = {
+    apiKey: "AIzaSyC7bpUZG6iqYzLWNcu3nWhw8vgEXPfZ4ZY",
+    authDomain: "volleyball-61c67.firebaseapp.com",
+    projectId: "volleyball-61c67",
+    storageBucket: "volleyball-61c67.firebasestorage.app",
+    messagingSenderId: "688276526284",
+    appId: "1:688276526284:web:8787d0915eba07a92b5e69"
+  };
+
+  function sanitizeDocId(key){
+    // Firestore 문서 ID에 쓰면 안 되는 문자만 안전하게 치환
+    return key.replace(/\//g, "_");
+  }
+
+  function tryInitFirebase(){
+    firebaseReady = false;
+    firebaseDb = null;
+    try{
+      const raw = localStorage.getItem(FIREBASE_CONFIG_KEY);
+      const config = raw ? JSON.parse(raw) : DEFAULT_FIREBASE_CONFIG;
+      if(!config || !config.apiKey || !config.projectId) return;
+      if(typeof firebase === "undefined") return; // CDN 스크립트 로드 실패 시
+      if(firebase.apps && firebase.apps.length){
+        firebase.app().delete().catch(()=>{});
+      }
+      firebase.initializeApp(config);
+      firebaseDb = firebase.firestore();
+      firebaseReady = true;
+    }catch(e){
+      console.error("Firebase 초기화 실패:", e);
+      firebaseReady = false;
+      firebaseDb = null;
+    }
+  }
+  tryInitFirebase();
+
+  async function storageGet(key){
+    try{
+      if(firebaseReady){
+        const doc = await firebaseDb.collection("vbBoardData").doc(sanitizeDocId(key)).get();
+        return doc.exists ? JSON.parse(doc.data().value) : null;
+      }
+      if(HAS_CLAUDE_STORAGE){
+        const r = await window.storage.get(key, true);
+        return (r && r.value) ? JSON.parse(r.value) : null;
+      }
+      const raw = localStorage.getItem("vb-board:" + key);
+      return raw !== null ? JSON.parse(raw) : null;
+    }catch(e){
+      console.error("저장소 읽기 실패:", key, e);
+      return null;
+    }
+  }
+  async function storageSet(key, val){
+    try{
+      if(firebaseReady){
+        await firebaseDb.collection("vbBoardData").doc(sanitizeDocId(key)).set({ value: JSON.stringify(val) });
+        return;
+      }
+      if(HAS_CLAUDE_STORAGE){
+        await window.storage.set(key, JSON.stringify(val), true);
+      } else {
+        localStorage.setItem("vb-board:" + key, JSON.stringify(val));
+      }
+    }catch(e){ console.error("저장소 쓰기 실패:", key, e); }
+  }
+  // 팀 + 모드로 스코프된 저장소 키 (admin-password-hash, teams-list는 전역 키라 이 함수를 쓰지 않음)
+  function scopeKey(base){ return base + "-" + currentTeam + "-" + mode; }
+
+  async function loadAllForMode(){
+    names = (await storageGet(scopeKey("player-names"))) || {};
+    oppNames = (await storageGet(scopeKey("opp-names"))) || {};
+    subNames = (await storageGet(scopeKey("sub-names"))) || {};
+    colors = (await storageGet(scopeKey("player-colors"))) || {};
+    oppColors = (await storageGet(scopeKey("opp-colors"))) || {};
+    subColors = (await storageGet(scopeKey("sub-colors"))) || {};
+    subCount = (await storageGet(scopeKey("sub-count"))) || 0;
+    tactics = (await storageGet(scopeKey("tactics"))) || [];
+    render();
+  }
+
+  function occupantOf(zone, r){
+    const N = cfg().zoneCount;
+    return ((zone + r - 1) % N) + 1;
+  }
+  function tierOf(zone){
+    const t = cfg().tiers;
+    if(t.front.includes(zone)) return "front";
+    if(t.mid && t.mid.includes(zone)) return "mid";
+    return "back";
+  }
+
+  function buildModeToggle(){
+    modeToggle.innerHTML = "";
+    Object.entries(CONFIGS).forEach(([key, c]) => {
+      const b = document.createElement("button");
+      b.className = key===mode ? "active" : "";
+      b.innerHTML = c.modeLabel + "<small>" + c.modeSub + "</small>";
+      b.onclick = () => {
+        if(mode === key) return;
+        mode = key; rotation = 0; situationKey = "serve";
+        manualPos = {}; oppManualPos = {}; subManualPos = {}; manualAngle = {}; oppManualAngle = {}; subManualAngle = {}; ballPos = { ...DEFAULT_BALL };
+        loadAllForMode();
+      };
+      modeToggle.appendChild(b);
+    });
+  }
+  function buildRotationBtns(){
+    rotationBtns.innerHTML = "";
+    const N = cfg().zoneCount;
+    for(let i=0;i<N;i++){
+      const b = document.createElement("button");
+      b.textContent = "로테이션 " + (i+1);
+      b.className = i===rotation ? "active" : "";
+      b.onclick = () => { rotation = i; manualPos = {}; render(); };
+      rotationBtns.appendChild(b);
+    }
+  }
+  function buildSituationBtns(){
+    situationBtns.innerHTML = "";
+    ORDER.forEach(key => {
+      const b = document.createElement("button");
+      b.textContent = cfg().situations[key].label;
+      b.className = key===situationKey ? "active" : "";
+      b.onclick = () => { situationKey = key; manualPos = {}; render(); };
+      situationBtns.appendChild(b);
+    });
+  }
+
+  // ---------- 코트 크기 / 확대·축소 / 전체화면 / 가로보기 ----------
+  const BASE_ASPECT = VIEW_H / VIEW_W; // 코트 viewBox의 세로/가로 비율 (세로가 긴 원래 비율)
+  const ZOOM_MIN = 0.4, ZOOM_MAX = 3, ZOOM_STEP = 0.2;
+  let courtZoom = 1;
+  let isCourtFullscreen = false;
+  let courtLandscape = false;
+
+  // 가로보기 모드에서는 실제 좌표 자체를 90도 회전시켜 다시 그린다.
+  // (CSS로 화면만 돌리면 드래그 좌표 계산이 꼬이고 글자도 옆으로 눕기 때문에,
+  //  좌표 변환으로 처리해서 드래그도 정확하고 글자도 항상 똑바로 보이게 한다.)
+  // 모든 상태값(manualPos 등)은 항상 "세로 기준" 좌표로 저장하고,
+  // 화면에 그릴 때만 rot()으로, 입력 좌표를 받을 때만 unrot()으로 변환한다.
+  function rot(x, y){
+    if(!courtLandscape) return { x, y };
+    return { x: y, y: VIEW_W - x };
+  }
+  function unrot(x, y){
+    if(!courtLandscape) return { x, y };
+    return { x: VIEW_W - y, y: x };
+  }
+  function rotRect(x, y, w, h){
+    if(!courtLandscape) return { x, y, width:w, height:h };
+    return { x: y, y: VIEW_W - x - w, width: h, height: w };
+  }
+
+  const fullscreenBtn = document.getElementById("fullscreenBtn");
+  const landscapeBtn = document.getElementById("landscapeBtn");
+  const courtWrapEl = document.getElementById("courtWrap");
+  const courtScrollEl = document.getElementById("courtScroll");
+  const zoomLabelEl = document.getElementById("zoomLabel");
+  const zoomInBtn = document.getElementById("zoomInBtn");
+  const zoomOutBtn = document.getElementById("zoomOutBtn");
+  const zoomResetBtn = document.getElementById("zoomResetBtn");
+
+  function updateCourtSize(){
+    const availWidth = courtWrapEl.clientWidth || 1;
+    const viewportH = window.innerHeight;
+    const visibleBudget = isCourtFullscreen ? viewportH * 0.94 : viewportH * 0.82;
+    const aspect = courtLandscape ? (VIEW_W / VIEW_H) : BASE_ASPECT;
+    // 가로 폭은 항상 꽉 채운다 (세로/가로 모드 모두 최대한 크게 보이도록).
+    let fitWidth = availWidth;
+    let fitHeight = fitWidth * aspect;
+    // 극단적으로 넓고 짧은 화면(초광각 모니터 등)에서 스크롤이 과도하게 길어지는 것만 방지.
+    const absoluteMaxHeight = viewportH * 3;
+    if(fitHeight > absoluteMaxHeight){
+      fitHeight = absoluteMaxHeight;
+      fitWidth = fitHeight / aspect;
+    }
+    svg.style.width = (fitWidth * courtZoom) + "px";
+    svg.style.height = (fitHeight * courtZoom) + "px";
+    // 보이는 영역(뷰포트) 높이만 제한하고, 이보다 크면 court-scroll 안에서 세로 스크롤로 이동.
+    courtScrollEl.style.maxHeight = visibleBudget + "px";
+
+    zoomLabelEl.textContent = Math.round(courtZoom * 100) + "%";
+    zoomOutBtn.disabled = courtZoom <= ZOOM_MIN + 0.001;
+    zoomInBtn.disabled = courtZoom >= ZOOM_MAX - 0.001;
+  }
+  function setZoom(z){
+    courtZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z));
+    updateCourtSize();
+  }
+  zoomInBtn.onclick = () => setZoom(courtZoom + ZOOM_STEP);
+  zoomOutBtn.onclick = () => setZoom(courtZoom - ZOOM_STEP);
+  zoomResetBtn.onclick = () => setZoom(1);
+
+  // Ctrl+스크롤 (트랙패드 핀치 시 브라우저가 ctrlKey와 함께 wheel 이벤트를 보냄)
+  courtScrollEl.addEventListener("wheel", (e) => {
+    if(!e.ctrlKey) return;
+    e.preventDefault();
+    setZoom(courtZoom + (e.deltaY > 0 ? -0.1 : 0.1));
+  }, { passive:false });
+
+  window.addEventListener("resize", updateCourtSize);
+
+  function setCourtLandscape(on){
+    courtLandscape = on;
+    svg.setAttribute("viewBox", on ? `0 0 ${VIEW_H} ${VIEW_W}` : `0 0 ${VIEW_W} ${VIEW_H}`);
+    landscapeBtn.innerHTML = on ? "↕ 세로로 보기" : "⤢ 가로로 보기";
+    landscapeBtn.title = on ? "세로 배치로 되돌리기" : "PC에서 가로로 크게 보기";
+    updateCourtSize();
+    render();
+  }
+  landscapeBtn.onclick = () => setCourtLandscape(!courtLandscape);
+
+  function setCourtFullscreen(on){
+    isCourtFullscreen = on;
+    document.body.classList.toggle("court-fullscreen", on);
+    fullscreenBtn.innerHTML = on ? "✕ 닫기" : "⛶ 전체화면";
+    fullscreenBtn.title = on ? "전체화면 닫기 (Esc)" : "전체화면으로 크게 보기";
+    updateCourtSize();
+  }
+  fullscreenBtn.onclick = () => setCourtFullscreen(!isCourtFullscreen);
+  document.addEventListener("keydown", (e) => {
+    if(e.key === "Escape"){
+      if(isCourtFullscreen) setCourtFullscreen(false);
+      if(document.getElementById("helpModal").classList.contains("show")) document.getElementById("helpModal").classList.remove("show");
+    }
+  });
+
+  document.getElementById("resetUs").onclick = () => { manualPos = {}; manualAngle = {}; render(); };
+  document.getElementById("resetOpp").onclick = () => { oppManualPos = {}; oppManualAngle = {}; render(); };
+  document.getElementById("resetSub").onclick = () => { subManualPos = {}; subManualAngle = {}; render(); };
+  document.getElementById("resetBall").onclick = () => { ballPos = { ...DEFAULT_BALL }; render(); };
+
+  // ---------- 교체선수 인원 수 (0~10, 없으면 표시 안 함) ----------
+  function setSubCount(n){
+    subCount = Math.max(0, Math.min(MAX_SUB, n));
+    storageSet(scopeKey("sub-count"), subCount);
+    render();
+  }
+  document.getElementById("subAddBtn").onclick = () => setSubCount(subCount + 1);
+  document.getElementById("subRemoveBtn").onclick = () => setSubCount(subCount - 1);
+
+  // ---------- Tactics (저장·수정은 관리자만) ----------
+  document.getElementById("saveTacticBtn").onclick = () => {
+    if(!isAdmin){ openLoginModal("전술을 저장하려면 관리자 로그인이 필요해요."); return; }
+    const name = prompt("전술 이름을 입력하세요:", "전술 " + (tactics.length + 1));
+    if(name === null || name.trim() === "") return;
+    const ourCur = ourTargetPositions();
+    const ourSnap = {};
+    Object.entries(ourCur).forEach(([p,pos]) => {
+      const m = manualPos[p];
+      const angle = manualAngle[p] !== undefined ? manualAngle[p] : DEFAULT_ANGLE.us;
+      ourSnap[p] = { x: m?m.x:pos.x, y: m?m.y:pos.y, angle };
+    });
+    const oppCur = oppDefaultPositions();
+    const oppSnap = {};
+    Object.entries(oppCur).forEach(([z,pos]) => {
+      const m = oppManualPos[z];
+      const angle = oppManualAngle[z] !== undefined ? oppManualAngle[z] : DEFAULT_ANGLE.opp;
+      oppSnap[z] = { x: m?m.x:pos.x, y: m?m.y:pos.y, angle };
+    });
+    const subCur = subDefaultPositions();
+    const subSnap = {};
+    Object.entries(subCur).forEach(([i,pos]) => {
+      const m = subManualPos[i];
+      const angle = subManualAngle[i] !== undefined ? subManualAngle[i] : DEFAULT_ANGLE.sub;
+      subSnap[i] = { x: m?m.x:pos.x, y: m?m.y:pos.y, angle };
+    });
+    const tactic = { id: Date.now().toString(36), name: name.trim(), our: ourSnap, opp: oppSnap, sub: subSnap, subCount, ball: { ...ballPos } };
+    tactics.push(tactic);
+    storageSet(scopeKey("tactics"), tactics);
+    render();
+  };
+
+  function loadTactic(t){
+    // 전술 불러오기(적용)는 누구나 가능
+    manualPos = {}; oppManualPos = {}; subManualPos = {}; manualAngle = {}; oppManualAngle = {}; subManualAngle = {};
+    Object.entries(t.our || {}).forEach(([p,pos]) => {
+      manualPos[p] = {x:pos.x,y:pos.y};
+      if(pos.angle !== undefined) manualAngle[p] = pos.angle;
+    });
+    Object.entries(t.opp || {}).forEach(([z,pos]) => {
+      oppManualPos[z] = {x:pos.x,y:pos.y};
+      if(pos.angle !== undefined) oppManualAngle[z] = pos.angle;
+    });
+    Object.entries(t.sub || {}).forEach(([i,pos]) => {
+      subManualPos[i] = {x:pos.x,y:pos.y};
+      if(pos.angle !== undefined) subManualAngle[i] = pos.angle;
+    });
+    if(typeof t.subCount === "number") subCount = t.subCount;
+    ballPos = { ...t.ball };
+    render();
+  }
+  function renameTactic(t){
+    if(!isAdmin){ openLoginModal("전술 이름 변경은 관리자만 할 수 있어요."); return; }
+    const name = prompt("새 전술 이름을 입력하세요:", t.name);
+    if(name === null || name.trim() === "") return;
+    t.name = name.trim();
+    storageSet(scopeKey("tactics"), tactics);
+    render();
+  }
+  function deleteTactic(t){
+    if(!isAdmin){ openLoginModal("전술 삭제는 관리자만 할 수 있어요."); return; }
+    if(!confirm("\"" + t.name + "\" 전술을 삭제할까요?")) return;
+    tactics = tactics.filter(x => x.id !== t.id);
+    storageSet(scopeKey("tactics"), tactics);
+    render();
+  }
+  function renderTacticList(){
+    const lockNote = document.getElementById("tacticLockNote");
+    lockNote.style.display = isAdmin ? "none" : "block";
+    if(tactics.length === 0){
+      tacticListEl.innerHTML = `<div class="tactic-empty">아직 저장된 전술이 없어요. 선수들을 원하는 자리로 옮긴 뒤 위 버튼으로 저장해보세요.</div>`;
+      return;
+    }
+    tacticListEl.innerHTML = "";
+    tactics.forEach(t => {
+      const row = document.createElement("div");
+      row.className = "tactic-row";
+      const loadBtn = document.createElement("button");
+      loadBtn.className = "tactic-load";
+      loadBtn.textContent = t.name;
+      loadBtn.onclick = () => loadTactic(t);
+      row.appendChild(loadBtn);
+      if(isAdmin){
+        const renameBtn = document.createElement("button");
+        renameBtn.className = "icon-btn"; renameBtn.textContent = "✎"; renameBtn.title = "이름 변경";
+        renameBtn.onclick = () => renameTactic(t);
+        const delBtn = document.createElement("button");
+        delBtn.className = "icon-btn"; delBtn.textContent = "×"; delBtn.title = "삭제";
+        delBtn.onclick = () => deleteTactic(t);
+        row.appendChild(renameBtn); row.appendChild(delBtn);
+      }
+      tacticListEl.appendChild(row);
+    });
+  }
+
+  // ---------- 관리자 인증 ----------
+  async function sha256Hex(str){
+    try{
+      const enc = new TextEncoder().encode(str);
+      const buf = await crypto.subtle.digest("SHA-256", enc);
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,"0")).join("");
+    }catch(e){
+      let h = 0;
+      for(let i=0;i<str.length;i++){ h = (h*31 + str.charCodeAt(i)) >>> 0; }
+      return "fallback" + h.toString(16);
+    }
+  }
+  async function initAdminAuth(){
+    const stored = await storageGet("admin-password-hash");
+    currentAdminHash = stored || (await sha256Hex(DEFAULT_ADMIN_PASSWORD));
+  }
+
+  const loginModal = document.getElementById("loginModal");
+  const loginPasswordInput = document.getElementById("loginPassword");
+  const loginHint = document.getElementById("loginHint");
+
+  function openLoginModal(infoMsg){
+    loginPasswordInput.value = "";
+    loginHint.textContent = infoMsg || "";
+    loginHint.style.color = infoMsg ? "#dcc79a" : "#9c8a6c";
+    loginModal.classList.add("show");
+    setTimeout(() => loginPasswordInput.focus(), 50);
+  }
+  function closeLoginModal(){ loginModal.classList.remove("show"); }
+
+  document.getElementById("loginCancel").onclick = closeLoginModal;
+  loginModal.addEventListener("click", (e) => { if(e.target === loginModal) closeLoginModal(); });
+  document.getElementById("adminLoginBtn").onclick = () => openLoginModal();
+  loginPasswordInput.addEventListener("keydown", (e) => { if(e.key === "Enter") document.getElementById("loginSubmit").click(); });
+
+  document.getElementById("loginSubmit").onclick = async () => {
+    const hash = await sha256Hex(loginPasswordInput.value);
+    if(hash === currentAdminHash){
+      isAdmin = true;
+      closeLoginModal();
+      updateAdminBar();
+      renderTeamSelectScreen();
+      if(currentTeam) render();
+    } else {
+      loginHint.textContent = "비밀번호가 올바르지 않습니다.";
+      loginHint.style.color = "#e08a7d";
+    }
+  };
+
+  function logoutAdmin(){
+    isAdmin = false;
+    updateAdminBar();
+    renderTeamSelectScreen();
+    if(currentTeam) render();
+  }
+
+  const pwModal = document.getElementById("pwModal");
+  function openPwModal(){
+    document.getElementById("pwNew").value = "";
+    document.getElementById("pwConfirm").value = "";
+    pwModal.classList.add("show");
+  }
+  function closePwModal(){ pwModal.classList.remove("show"); }
+  document.getElementById("pwCancel").onclick = closePwModal;
+  pwModal.addEventListener("click", (e) => { if(e.target === pwModal) closePwModal(); });
+  document.getElementById("pwSave").onclick = async () => {
+    const a = document.getElementById("pwNew").value;
+    const b = document.getElementById("pwConfirm").value;
+    if(a.length < 4){ alert("비밀번호는 4자 이상으로 설정해주세요."); return; }
+    if(a !== b){ alert("두 비밀번호가 일치하지 않습니다."); return; }
+    currentAdminHash = await sha256Hex(a);
+    await storageSet("admin-password-hash", currentAdminHash);
+    closePwModal();
+    alert("비밀번호가 변경되었습니다.");
+  };
+
+  function updateStorageStatus(){
+    const el = document.getElementById("storageStatus");
+    if(firebaseReady){
+      el.innerHTML = '<span class="dot on"></span> Firebase 연결됨 — 다른 기기·다른 브라우저에서도 같은 데이터를 봐요.';
+    } else if(HAS_CLAUDE_STORAGE){
+      el.innerHTML = '<span class="dot on"></span> Claude 공유 저장소 사용 중 — 이 도구를 여는 모두가 같은 데이터를 공유해요.';
+    } else {
+      el.innerHTML = '<span class="dot off"></span> 이 브라우저에만 저장 중 (다른 기기와 공유되지 않아요). 관리자는 Firebase를 연결해 공유할 수 있어요.';
+    }
+  }
+
+  function updateAdminBar(){
+    const text = document.getElementById("adminStatusText");
+    const actions = document.getElementById("adminBarActions");
+    actions.innerHTML = "";
+    if(isAdmin){
+      text.innerHTML = '<span class="admin-on">관리자 모드 켜짐</span> — 전술을 저장·수정·삭제할 수 있어요.';
+      const pwBtn = document.createElement("button"); pwBtn.className = "bar-btn"; pwBtn.textContent = "비밀번호 변경"; pwBtn.onclick = openPwModal;
+      const fbBtn = document.createElement("button"); fbBtn.className = "bar-btn";
+      fbBtn.textContent = firebaseReady ? "Firebase 연결 관리" : "Firebase 연결하기";
+      fbBtn.onclick = openFirebaseModal;
+      const logoutBtn = document.createElement("button"); logoutBtn.className = "bar-btn"; logoutBtn.textContent = "로그아웃"; logoutBtn.onclick = logoutAdmin;
+      actions.appendChild(pwBtn); actions.appendChild(fbBtn); actions.appendChild(logoutBtn);
+    } else {
+      text.textContent = "누구나 선수·공 위치를 바꿔볼 수 있어요. 전술 저장/수정은 관리자만 가능합니다.";
+      const loginBtn = document.createElement("button"); loginBtn.className = "bar-btn"; loginBtn.textContent = "관리자 로그인"; loginBtn.onclick = () => openLoginModal();
+      actions.appendChild(loginBtn);
+    }
+    updateStorageStatus();
+  }
+
+  // ---------- Firebase 연결 설정 (관리자 전용) ----------
+  const firebaseModal = document.getElementById("firebaseModal");
+  const firebaseConfigInput = document.getElementById("firebaseConfigInput");
+  const firebaseHint = document.getElementById("firebaseHint");
+
+  function openFirebaseModal(){
+    if(!isAdmin){ openLoginModal("Firebase 연결 설정은 관리자만 할 수 있어요."); return; }
+    const raw = localStorage.getItem(FIREBASE_CONFIG_KEY);
+    if(raw){
+      firebaseConfigInput.value = JSON.stringify(JSON.parse(raw), null, 2);
+      firebaseHint.textContent = firebaseReady ? "이 브라우저에서 지정한 별도 Firebase 프로젝트에 연결되어 있어요." : "";
+    } else {
+      firebaseConfigInput.value = JSON.stringify(DEFAULT_FIREBASE_CONFIG, null, 2);
+      firebaseHint.textContent = firebaseReady ? "기본으로 내장된 Firebase 프로젝트에 연결되어 있어요 (모든 기기 공통)." : "";
+    }
+    firebaseHint.style.color = "#9c8a6c";
+    firebaseModal.classList.add("show");
+  }
+  function closeFirebaseModal(){ firebaseModal.classList.remove("show"); }
+  document.getElementById("firebaseCancel").onclick = closeFirebaseModal;
+  firebaseModal.addEventListener("click", (e) => { if(e.target === firebaseModal) closeFirebaseModal(); });
+
+  document.getElementById("firebaseSave").onclick = () => {
+    const raw = firebaseConfigInput.value.trim();
+    if(!raw){ firebaseHint.textContent = "설정 값을 붙여넣어주세요."; firebaseHint.style.color = "#e08a7d"; return; }
+    let parsed;
+    try{ parsed = JSON.parse(raw); }
+    catch(e){ firebaseHint.textContent = "올바른 JSON 형식이 아니에요. Firebase 콘솔의 firebaseConfig 객체를 그대로 복사해주세요."; firebaseHint.style.color = "#e08a7d"; return; }
+    if(!parsed.apiKey || !parsed.projectId){
+      firebaseHint.textContent = "apiKey, projectId가 포함된 firebaseConfig 객체가 맞는지 확인해주세요.";
+      firebaseHint.style.color = "#e08a7d";
+      return;
+    }
+    localStorage.setItem(FIREBASE_CONFIG_KEY, JSON.stringify(parsed));
+    tryInitFirebase();
+    if(firebaseReady){
+      firebaseHint.textContent = "연결됐어요! 잠시 후 다시 불러올게요.";
+      firebaseHint.style.color = "#9fd6b8";
+      updateStorageStatus();
+      updateAdminBar();
+      setTimeout(() => { closeFirebaseModal(); if(currentTeam) loadAllForMode(); }, 700);
+    } else {
+      firebaseHint.textContent = "연결에 실패했어요. Firestore Database를 만들어뒀는지, 값이 정확한지 확인해주세요.";
+      firebaseHint.style.color = "#e08a7d";
+    }
+  };
+  document.getElementById("firebaseDisconnect").onclick = () => {
+    if(!confirm("이 브라우저에 지정해둔 별도 Firebase 설정을 지우고, 모든 기기가 공통으로 쓰는 기본 프로젝트로 되돌릴까요?")) return;
+    localStorage.removeItem(FIREBASE_CONFIG_KEY);
+    tryInitFirebase();
+    updateStorageStatus();
+    updateAdminBar();
+    closeFirebaseModal();
+    if(currentTeam) loadAllForMode();
+  };
+
+  // ---------- 이용방법 (누구나 접근 가능) ----------
+  const helpModal = document.getElementById("helpModal");
+  document.getElementById("helpBtn").onclick = () => helpModal.classList.add("show");
+  document.getElementById("helpClose").onclick = () => helpModal.classList.remove("show");
+  helpModal.addEventListener("click", (e) => { if(e.target === helpModal) helpModal.classList.remove("show"); });
+
+  // ---------- Edit modal (이름 & 색상, 관리자만 접근) ----------
+  const editModal = document.getElementById("editModal");
+  const editTitle = document.getElementById("editModalTitle");
+  const editNameInput = document.getElementById("editName");
+  const editColorInput = document.getElementById("editColor");
+
+  const TEAM_LABEL = { us:"우리 팀 ", opp:"상대 팀 ", sub:"교체 선수 " };
+
+  function storeRefsFor(team){
+    if(team === "us") return {
+      names, colors, namesKey:scopeKey("player-names"), colorsKey:scopeKey("player-colors"),
+      defaultColor:(p)=>TIER_COLOR[tierOf(Number(p))] || "#eab659"
+    };
+    if(team === "opp") return {
+      names:oppNames, colors:oppColors, namesKey:scopeKey("opp-names"), colorsKey:scopeKey("opp-colors"),
+      defaultColor:()=>DEFAULT_OPP_COLOR
+    };
+    return {
+      names:subNames, colors:subColors, namesKey:scopeKey("sub-names"), colorsKey:scopeKey("sub-colors"),
+      defaultColor:()=>DEFAULT_SUB_COLOR
+    };
+  }
+
+  function openEditModal(team, player){
+    editing = { team, player };
+    const refs = storeRefsFor(team);
+    editTitle.textContent = TEAM_LABEL[team] + player + "번 편집";
+    editNameInput.value = refs.names[player] || "";
+    editColorInput.value = refs.colors[player] || refs.defaultColor(player);
+    editModal.classList.add("show");
+    setTimeout(() => editNameInput.focus(), 50);
+  }
+  function closeEditModal(){ editModal.classList.remove("show"); editing = null; }
+
+  document.getElementById("editCancel").onclick = closeEditModal;
+  editModal.addEventListener("click", (e) => { if(e.target === editModal) closeEditModal(); });
+
+  document.getElementById("editSave").onclick = async () => {
+    if(!editing) return;
+    const { team, player } = editing;
+    const refs = storeRefsFor(team);
+    const nameVal = editNameInput.value.trim();
+    const colorVal = editColorInput.value;
+    if(nameVal) refs.names[player] = nameVal; else delete refs.names[player];
+    refs.colors[player] = colorVal;
+    await storageSet(refs.namesKey, refs.names);
+    await storageSet(refs.colorsKey, refs.colors);
+    closeEditModal();
+    render();
+  };
+
+  document.getElementById("editResetBtn").onclick = async () => {
+    if(!editing) return;
+    const { team, player } = editing;
+    const refs = storeRefsFor(team);
+    delete refs.names[player];
+    delete refs.colors[player];
+    await storageSet(refs.namesKey, refs.names);
+    await storageSet(refs.colorsKey, refs.colors);
+    closeEditModal();
+    render();
+  };
+
+  // ---------- Position helpers ----------
+  function ourTargetPositions(){
+    const c = cfg();
+    const sit = c.situations[situationKey];
+    const positions = {};
+    for(let z=1; z<=c.zoneCount; z++){
+      const player = occupantOf(z, rotation);
+      const base = c.base[z];
+      const off = sit.offsets[z] || {dx:0,dy:0};
+      positions[player] = { x: base.x + off.dx, y: base.y + off.dy, zone: z, baseX: base.x, baseY: base.y, tier: tierOf(z) };
+    }
+    return positions;
+  }
+  function oppDefaultPositions(){
+    const c = cfg();
+    const positions = {};
+    for(let z=1; z<=c.zoneCount; z++){
+      const base = c.oppBase[z];
+      positions[z] = { x: base.x, y: base.y };
+    }
+    return positions;
+  }
+  function subDefaultPositions(){
+    const usableTop = OUR_TOP + 40, usableBottom = OUR_BOTTOM - 40;
+    const step = (usableBottom - usableTop) / (MAX_SUB - 1); // 슬롯 간격은 항상 고정 (인원 늘어도 기존 위치 안 밀림)
+    const positions = {};
+    for(let i=1; i<=subCount; i++){
+      positions[i] = { x: SUB_X, y: usableTop + (i-1)*step };
+    }
+    return positions;
+  }
+  function getCurrentPos(team, player){
+    if(team === "us"){
+      const m = manualPos[player];
+      if(m) return { x:m.x, y:m.y };
+      const positions = ourTargetPositions();
+      return { x: positions[player].x, y: positions[player].y };
+    }
+    if(team === "opp"){
+      const m = oppManualPos[player];
+      if(m) return { x:m.x, y:m.y };
+      const b = cfg().oppBase[player];
+      return { x:b.x, y:b.y };
+    }
+    if(team === "sub"){
+      const m = subManualPos[player];
+      if(m) return { x:m.x, y:m.y };
+      return subDefaultPositions()[player];
+    }
+    return { x: ballPos.x, y: ballPos.y };
+  }
+  function getCurrentAngle(team, player){
+    const store = team === "us" ? manualAngle : team === "opp" ? oppManualAngle : subManualAngle;
+    return store[player] !== undefined ? store[player] : DEFAULT_ANGLE[team];
+  }
+  // 정면 방향 표시용 화면 각도 (가로보기 모드에서는 좌표 자체가 반시계로 90도 도는 형태라 -90 보정)
+  function displayAngle(canonicalAngle){
+    return canonicalAngle + (courtLandscape ? -90 : 0);
+  }
+  function escapeXml(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+  // 이름이 있으면 번호 대신 이름을 토큰 안에 표시 (길이에 따라 글자 크기 자동 조절)
+  function tokenLabel(id, name){
+    if(name){
+      let fontSize = 13;
+      if(name.length >= 5) fontSize = 9;
+      else if(name.length >= 4) fontSize = 10.5;
+      else if(name.length >= 3) fontSize = 12;
+      return { text: name, fontSize };
+    }
+    return { text: String(id), fontSize: 15 };
+  }
+
+  function clampToCanvas(x, y){
+    x = Math.max(14, Math.min(VIEW_W-14, x));
+    y = Math.max(14, Math.min(VIEW_H-14, y));
+    return {x,y};
+  }
+  function svgPoint(e){
+    const rect = svg.getBoundingClientRect();
+    // 현재 화면에 걸린 viewBox 크기 (가로보기면 가로세로가 뒤바뀜)
+    const curW = courtLandscape ? VIEW_H : VIEW_W;
+    const curH = courtLandscape ? VIEW_W : VIEW_H;
+    const scaleX = curW / rect.width;
+    const scaleY = curH / rect.height;
+    const dispX = (e.clientX - rect.left) * scaleX;
+    const dispY = (e.clientY - rect.top) * scaleY;
+    // 화면 표시 좌표를 항상 "세로 기준" 캔버스 좌표로 되돌린다.
+    return unrot(dispX, dispY);
+  }
+
+  function defs(){
+    return `
+    <defs>
+      <pattern id="netMesh" width="14" height="14" patternUnits="userSpaceOnUse">
+        <path d="M0,0 L14,14 M14,0 L0,14" stroke="#f5efe2" stroke-width="0.8" opacity="0.55"/>
+      </pattern>
+      <linearGradient id="woodGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#cf9a63"/><stop offset="100%" stop-color="#b47b44"/>
+      </linearGradient>
+      <marker id="arrowHead" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto-start-reverse">
+        <path d="M0,0 L8,4 L0,8 z" fill="#f5efe2" opacity="0.7"/>
+      </marker>
+    </defs>`;
+  }
+
+  function render(){
+    buildModeToggle();
+    const c = cfg();
+    rotationGroup.style.display = c.hasRotation ? "block" : "none";
+    rotationScoreItem.style.display = c.hasRotation ? "flex" : "none";
+    serverScoreItem.style.display = c.hasRotation ? "flex" : "none";
+    if(c.hasRotation) buildRotationBtns();
+    buildSituationBtns();
+    renderTacticList();
+
+    const sit = c.situations[situationKey];
+    const ourPositions = ourTargetPositions();
+    const oppPositions = oppDefaultPositions();
+    const serverPlayer = occupantOf(1, rotation);
+
+    document.getElementById("scoreMode").textContent = c.modeLabel;
+    document.getElementById("scoreRotation").textContent = (rotation+1);
+    document.getElementById("scoreSituation").textContent = sit.short;
+    document.getElementById("scoreServer").textContent = "#" + serverPlayer;
+    document.getElementById("subCountLabel").textContent = subCount + " / " + MAX_SUB + "명";
+
+    if(mode === "9"){
+      ruleNote.style.display = "block";
+      ruleNote.innerHTML = "<b>참고</b> — 9인제는 리그·동호회마다 세부 규칙이 다르게 운영되는 경우가 많아 로테이션 기능은 넣지 않았습니다. 선수 위치는 자유롭게 옮기고, 마음에 드는 배치는 전술로 저장해두세요.";
+    } else { ruleNote.style.display = "none"; }
+
+    let s = defs();
+
+    // 상대 팀 코트
+    let r1 = rotRect(SIDE_L, OPP_TOP, SIDE_R-SIDE_L, COURT_DEPTH);
+    s += `<rect x="${r1.x}" y="${r1.y}" width="${r1.width}" height="${r1.height}" fill="url(#woodGrad)"/>`;
+    let p1 = rot(SIDE_L, OPP_ATTACK_Y), p2 = rot(SIDE_R, OPP_ATTACK_Y);
+    s += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="#f5efe2" stroke-width="2.5"/>`;
+    let pLabel = rot(SIDE_R+8, OPP_ATTACK_Y+4);
+    s += `<text x="${pLabel.x}" y="${pLabel.y}" fill="#f5efe2" font-size="10" font-family="Arial Narrow, sans-serif">3M</text>`;
+    if(mode === "9"){
+      let q1 = rot(SIDE_L, OPP_ROW2_Y), q2 = rot(SIDE_R, OPP_ROW2_Y);
+      s += `<line x1="${q1.x}" y1="${q1.y}" x2="${q2.x}" y2="${q2.y}" stroke="#f5efe2" stroke-width="1.4" stroke-dasharray="4,6" opacity="0.6"/>`;
+    }
+    s += `<rect x="${r1.x}" y="${r1.y}" width="${r1.width}" height="${r1.height}" fill="none" stroke="#f5efe2" stroke-width="3"/>`;
+    let oppLabelPos = rot((SIDE_L+SIDE_R)/2, OPP_TOP-6);
+    s += `<text x="${oppLabelPos.x}" y="${oppLabelPos.y}" text-anchor="middle" fill="#c98077" font-size="12" letter-spacing="2" font-family="Arial Narrow, sans-serif">상대 팀 코트</text>`;
+
+    // 네트
+    let netRect = rotRect(SIDE_L-5, NET_Y1, SIDE_R-SIDE_L+10, NET_THICK);
+    s += `<rect x="${netRect.x}" y="${netRect.y}" width="${netRect.width}" height="${netRect.height}" fill="url(#netMesh)"/>`;
+    s += `<rect x="${netRect.x}" y="${netRect.y}" width="${netRect.width}" height="${netRect.height}" fill="none" stroke="#f5efe2" stroke-width="1.5"/>`;
+
+    // 우리 팀 코트
+    let r2 = rotRect(SIDE_L, OUR_TOP, SIDE_R-SIDE_L, COURT_DEPTH);
+    s += `<rect x="${r2.x}" y="${r2.y}" width="${r2.width}" height="${r2.height}" fill="url(#woodGrad)"/>`;
+    let p3 = rot(SIDE_L, OUR_ATTACK_Y), p4 = rot(SIDE_R, OUR_ATTACK_Y);
+    s += `<line x1="${p3.x}" y1="${p3.y}" x2="${p4.x}" y2="${p4.y}" stroke="#f5efe2" stroke-width="2.5"/>`;
+    let ourLabel = rot(SIDE_R+8, OUR_ATTACK_Y+4);
+    s += `<text x="${ourLabel.x}" y="${ourLabel.y}" fill="#f5efe2" font-size="10" font-family="Arial Narrow, sans-serif">3M</text>`;
+    if(mode === "9"){
+      let q3 = rot(SIDE_L, OUR_ROW2_Y), q4 = rot(SIDE_R, OUR_ROW2_Y);
+      s += `<line x1="${q3.x}" y1="${q3.y}" x2="${q4.x}" y2="${q4.y}" stroke="#f5efe2" stroke-width="1.4" stroke-dasharray="4,6" opacity="0.6"/>`;
+    }
+    s += `<rect x="${r2.x}" y="${r2.y}" width="${r2.width}" height="${r2.height}" fill="none" stroke="#f5efe2" stroke-width="3"/>`;
+    let ourCourtLabelPos = rot((SIDE_L+SIDE_R)/2, OUR_BOTTOM+22);
+    s += `<text x="${ourCourtLabelPos.x}" y="${ourCourtLabelPos.y}" text-anchor="middle" fill="#8fd6c2" font-size="12" letter-spacing="2" font-family="Arial Narrow, sans-serif">우리 팀 코트</text>`;
+
+    let g1 = rot((SIDE_L+SIDE_R)/2, OPP_TOP), g2 = rot((SIDE_L+SIDE_R)/2, OUR_BOTTOM);
+    s += `<line x1="${g1.x}" y1="${g1.y}" x2="${g2.x}" y2="${g2.y}" stroke="#f5efe2" stroke-width="0.6" stroke-dasharray="3,6" opacity="0.3"/>`;
+
+    for(let z=1; z<=c.zoneCount; z++){
+      const b = rot(c.base[z].x, c.base[z].y);
+      s += `<circle cx="${b.x}" cy="${b.y}" r="3" fill="#f5efe2" opacity="0.25"/>`;
+      const ob = rot(c.oppBase[z].x, c.oppBase[z].y);
+      s += `<circle cx="${ob.x}" cy="${ob.y}" r="3" fill="#f5efe2" opacity="0.25"/>`;
+    }
+
+    // 상대 팀 마커 (transform으로 위치 지정 → 드래그 시 이 속성만 갱신)
+    for(const [zStr, pos] of Object.entries(oppPositions)){
+      const z = parseInt(zStr);
+      const manual = oppManualPos[z];
+      const rawX = manual ? manual.x : pos.x;
+      const rawY = manual ? manual.y : pos.y;
+      const dp = rot(rawX, rawY);
+      const name = oppNames[z] || "";
+      const color = oppColors[z] || DEFAULT_OPP_COLOR;
+      const label = tokenLabel(z, name);
+      const ang = displayAngle(getCurrentAngle("opp", z)).toFixed(2);
+      s += `
+        <g class="marker" data-team="opp" data-player="${z}" transform="translate(${dp.x},${dp.y})">
+          <circle class="hit-area" cx="0" cy="0" r="32" fill="transparent"/>
+          <g class="facing-rotate" transform="rotate(${ang})">
+            <rect class="token" x="-18" y="-18" width="36" height="36" rx="6" fill="${color}" stroke="#241c14" stroke-width="2"/>
+            <text x="0" y="5" text-anchor="middle" font-size="${label.fontSize}" font-weight="700" fill="#fff" font-family="Arial, sans-serif" style="pointer-events:none;">${escapeXml(label.text)}</text>
+            <circle class="rotate-handle-hit" data-team="opp" data-player="${z}" cx="0" cy="-18" r="15" fill="transparent"/>
+            <circle class="rotate-handle" cx="0" cy="-18" r="7" fill="#f5efe2" stroke="#1a1512" stroke-width="1.5" style="pointer-events:none;"/>
+          </g>
+        </g>`;
+    }
+
+    // 우리 팀 이동 화살표 + 마커
+    for(const [playerStr, pos] of Object.entries(ourPositions)){
+      const player = parseInt(playerStr);
+      const manual = manualPos[player];
+      const rawX = manual ? manual.x : pos.x;
+      const rawY = manual ? manual.y : pos.y;
+      const dp = rot(rawX, rawY);
+      const moved = Math.abs(pos.x - pos.baseX) > 2 || Math.abs(pos.y - pos.baseY) > 2;
+      if(moved && !manual){
+        const dBase = rot(pos.baseX, pos.baseY);
+        s += `<line id="arrow-us-${player}" x1="${dBase.x}" y1="${dBase.y}" x2="${dp.x}" y2="${dp.y}" stroke="#f5efe2" stroke-width="1.4" stroke-dasharray="5,5" opacity="0.55" marker-end="url(#arrowHead)"/>`;
+      }
+      const color = colors[player] || TIER_COLOR[pos.tier];
+      const displayName = names[player] || "";
+      const label = tokenLabel(player, displayName);
+      const ang = displayAngle(getCurrentAngle("us", player)).toFixed(2);
+      s += `
+        <g class="marker" data-team="us" data-player="${player}" transform="translate(${dp.x},${dp.y})">
+          <circle class="hit-area" cx="0" cy="0" r="34" fill="transparent"/>
+          <g class="facing-rotate" transform="rotate(${ang})">
+            <circle class="token" cx="0" cy="0" r="20" fill="${color}" stroke="#241c14" stroke-width="2"/>
+            <text x="0" y="5" text-anchor="middle" font-size="${label.fontSize}" font-weight="700" fill="#241c14" font-family="Arial, sans-serif" style="pointer-events:none;">${escapeXml(label.text)}</text>
+            <circle class="rotate-handle-hit" data-team="us" data-player="${player}" cx="0" cy="-20" r="15" fill="transparent"/>
+            <circle class="rotate-handle" cx="0" cy="-20" r="7" fill="#f5efe2" stroke="#1a1512" stroke-width="1.5" style="pointer-events:none;"/>
+          </g>
+        </g>`;
+    }
+
+    // 교체 선수 벤치 라벨
+    let benchLabelPos = rot(SUB_X, OUR_TOP+16);
+    s += `<text x="${benchLabelPos.x}" y="${benchLabelPos.y}" text-anchor="middle" fill="#9c8a6c" font-size="11" letter-spacing="2" font-family="Arial Narrow, sans-serif">교체</text>`;
+
+    // 교체 선수 마커 (오각형, 우리 팀 코트 왼쪽 바깥)
+    const subPositions = subDefaultPositions();
+    for(const [iStr, pos] of Object.entries(subPositions)){
+      const i = parseInt(iStr);
+      const manual = subManualPos[i];
+      const rawX = manual ? manual.x : pos.x;
+      const rawY = manual ? manual.y : pos.y;
+      const dp = rot(rawX, rawY);
+      const color = subColors[i] || DEFAULT_SUB_COLOR;
+      const name = subNames[i] || "";
+      const label = tokenLabel(i, name);
+      const ang = displayAngle(getCurrentAngle("sub", i)).toFixed(2);
+      s += `
+        <g class="marker" data-team="sub" data-player="${i}" transform="translate(${dp.x},${dp.y})">
+          <circle class="hit-area" cx="0" cy="0" r="32" fill="transparent"/>
+          <g class="facing-rotate" transform="rotate(${ang})">
+            <path class="token" d="${PENTAGON_PATH}" fill="${color}" stroke="#241c14" stroke-width="2" stroke-dasharray="2,2"/>
+            <text x="0" y="7" text-anchor="middle" font-size="${label.fontSize}" font-weight="700" fill="#fff" font-family="Arial, sans-serif" style="pointer-events:none;">${escapeXml(label.text)}</text>
+            <circle class="rotate-handle-hit" data-team="sub" data-player="${i}" cx="0" cy="-20" r="15" fill="transparent"/>
+            <circle class="rotate-handle" cx="0" cy="-20" r="7" fill="#f5efe2" stroke="#1a1512" stroke-width="1.5" style="pointer-events:none;"/>
+          </g>
+        </g>`;
+    }
+
+    // 공
+    {
+      const dBall = rot(ballPos.x, ballPos.y);
+      s += `
+        <g class="marker" data-team="ball" data-player="1" transform="translate(${dBall.x},${dBall.y})">
+          <circle class="hit-area" cx="0" cy="0" r="26" fill="transparent"/>
+          <circle class="token" cx="0" cy="0" r="14" fill="#f4f1e4" stroke="#241c14" stroke-width="2"/>
+          <path d="M -14,0 Q 0,-15 14,0" fill="none" stroke="#241c14" stroke-width="1.2" opacity="0.65"/>
+          <path d="M -14,0 Q 0,15 14,0" fill="none" stroke="#241c14" stroke-width="1.2" opacity="0.65"/>
+          <line x1="0" y1="-14" x2="0" y2="14" stroke="#241c14" stroke-width="1.2" opacity="0.65"/>
+        </g>`;
+    }
+
+    svg.innerHTML = s;
+    attachHandlers();
+    renderSidePanel(sit, ourPositions, serverPlayer, c);
+  }
+
+  function attachHandlers(){
+    const markers = svg.querySelectorAll(".marker");
+    markers.forEach(g => {
+      const team = g.getAttribute("data-team");
+      const player = parseInt(g.getAttribute("data-player"));
+
+      g.addEventListener("touchstart", (e) => { e.preventDefault(); }, { passive:false });
+      g.addEventListener("touchmove", (e) => { e.preventDefault(); }, { passive:false });
+
+      g.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const cur = getCurrentPos(team, player);
+        const p = svgPoint(e);
+        drag = { team, player, mode:"move", offsetX: p.x - cur.x, offsetY: p.y - cur.y, el: g, startPoint: p };
+        g.classList.add("is-dragging");
+        if(team === "us"){
+          const arrow = svg.querySelector("#arrow-us-" + player);
+          if(arrow) arrow.style.opacity = "0";
+        }
+        try{ g.setPointerCapture(e.pointerId); }catch(err){}
+      });
+
+      g.addEventListener("pointermove", (e) => {
+        if(!drag || drag.el !== g) return;
+        if(drag.mode === "rotate"){
+          const inner = g.querySelector(".facing-rotate");
+          if(inner) inner.setAttribute("transform", `rotate(${displayAngle(angleFromEvent(team, player, e)).toFixed(2)})`);
+          return;
+        }
+        const p = svgPoint(e);
+        const c = clampToCanvas(p.x - drag.offsetX, p.y - drag.offsetY);
+        g.setAttribute("transform", `translate(${c.x},${c.y})`);
+      });
+
+      function finishDrag(e){
+        if(!drag || drag.el !== g) return;
+
+        if(drag.mode === "rotate"){
+          const angle = angleFromEvent(team, player, e);
+          if(team === "us"){ manualAngle[player] = angle; }
+          else if(team === "opp"){ oppManualAngle[player] = angle; }
+          else { subManualAngle[player] = angle; }
+          g.classList.remove("is-dragging");
+          drag = null;
+          render();
+          return;
+        }
+
+        const p = svgPoint(e);
+        const c = clampToCanvas(p.x - drag.offsetX, p.y - drag.offsetY);
+        const moveDist = Math.hypot(p.x - drag.startPoint.x, p.y - drag.startPoint.y);
+        if(team === "us"){ manualPos[player] = c; }
+        else if(team === "opp"){ oppManualPos[player] = c; }
+        else if(team === "sub"){ subManualPos[player] = c; }
+        else { ballPos = c; }
+        g.classList.remove("is-dragging");
+        drag = null;
+
+        // 렌더링으로 DOM이 매번 새로 생성되어 브라우저 기본 dblclick이
+        // 씹히기 때문에, 클릭 간격을 직접 측정해 더블클릭을 판정한다.
+        if(moveDist < CLICK_MOVE_THRESHOLD){
+          const now = Date.now();
+          if(lastClick && lastClick.team === team && lastClick.player === player && (now - lastClick.time) < DOUBLE_CLICK_MS){
+            lastClick = null;
+            render();
+            handleMarkerDoubleClick(team, player);
+            return;
+          }
+          lastClick = { team, player, time: now };
+        } else {
+          lastClick = null;
+        }
+        render();
+      }
+      g.addEventListener("pointerup", finishDrag);
+      g.addEventListener("pointercancel", () => {
+        if(!drag || drag.el !== g) return;
+        g.classList.remove("is-dragging");
+        drag = null;
+        render();
+      });
+    });
+
+    // 방향 조절 손잡이 (토큰 테두리 위쪽 흰 점) — 여기를 누르면 이동이 아니라 회전으로 시작한다.
+    const rotateHandles = svg.querySelectorAll(".rotate-handle-hit");
+    rotateHandles.forEach(handle => {
+      const team = handle.getAttribute("data-team");
+      const player = parseInt(handle.getAttribute("data-player"));
+      const parentMarker = handle.closest(".marker");
+      if(!parentMarker) return;
+
+      handle.addEventListener("touchstart", (e) => { e.preventDefault(); }, { passive:false });
+      handle.addEventListener("touchmove", (e) => { e.preventDefault(); }, { passive:false });
+
+      handle.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        drag = { team, player, mode:"rotate", el: parentMarker, startPoint: svgPoint(e) };
+        parentMarker.classList.add("is-dragging");
+        try{ parentMarker.setPointerCapture(e.pointerId); }catch(err){}
+      });
+    });
+  }
+
+  function angleFromEvent(team, player, e){
+    const center = getCurrentPos(team, player); // 캔버스(세로 기준) 좌표
+    const p = svgPoint(e);
+    const dx = p.x - center.x, dy = p.y - center.y;
+    let a = Math.atan2(dx, -dy) * 180 / Math.PI; // 0=위쪽, 시계방향
+    if(a < 0) a += 360;
+    return a;
+  }
+
+  function handleMarkerDoubleClick(team, player){
+    if(team === "ball"){ ballPos = { ...DEFAULT_BALL }; render(); return; }
+    if(!isAdmin){ openLoginModal("선수 이름/색상 변경은 관리자만 할 수 있어요."); return; }
+    openEditModal(team, player);
+  }
+
+  function renderSidePanel(sit, positions, serverPlayer, c){
+    const zoneToPlayer = {};
+    Object.entries(positions).forEach(([p,pos]) => zoneToPlayer[pos.zone] = parseInt(p));
+
+    let rows = "";
+    for(let z=1; z<=c.zoneCount; z++){
+      const player = zoneToPlayer[z];
+      const role = sit.roles[z] || "";
+      const color = colors[player] || TIER_COLOR[tierOf(z)];
+      rows += `<li><span class="num" style="background:${color};">${player}</span><span>${names[player] ? escapeXml(names[player]) + " · " : ""}${role}</span></li>`;
+    }
+
+    let oppRows = "";
+    const oppEntries = Object.entries(oppNames);
+    if(oppEntries.length === 0){
+      oppRows = `<div class="opp-note">상대 팀 사각형을 더블클릭하면 "상대 세터", "상대 주공격수" 같은 이름과 색을 지정할 수 있어요. (관리자만 가능)</div>`;
+    } else {
+      oppRows = `<ul class="opp-list">` + oppEntries.map(([z,n]) => {
+        const color = oppColors[z] || DEFAULT_OPP_COLOR;
+        return `<li><span class="num" style="background:${color};">${z}</span><span>${escapeXml(n)}</span></li>`;
+      }).join("") + `</ul>`;
+    }
+
+    let subRows = "";
+    const subEntries = Object.entries(subNames);
+    if(subEntries.length === 0){
+      subRows = `<div class="opp-note">교체 선수 오각형을 더블클릭하면 이름과 색을 지정할 수 있어요. (관리자만 가능)</div>`;
+    } else {
+      subRows = `<ul class="opp-list">` + subEntries.map(([i,n]) => {
+        const color = subColors[i] || DEFAULT_SUB_COLOR;
+        return `<li><span class="num" style="background:${color};">${i}</span><span>${escapeXml(n)}</span></li>`;
+      }).join("") + `</ul>`;
+    }
+
+    sidePanel.innerHTML = `
+      <h2 class="situation-title display">${sit.label}</h2>
+      <p class="situation-desc">${sit.desc}</p>
+      <h3 style="font-size:11px;letter-spacing:0.18em;color:#b79a6f;text-transform:uppercase;margin:0 0 8px;">선수별 역할</h3>
+      <ul class="role-list">${rows}</ul>
+      <div class="opp-section">
+        <h3>상대 팀 메모</h3>
+        ${oppRows}
+      </div>
+      <div class="opp-section">
+        <h3>교체 선수 메모</h3>
+        ${subRows}
+      </div>
+    `;
+  }
+
+  // ---------- 팀 관리 (팀 목록은 전역, 관리자만 추가·수정·삭제·비밀번호 설정) ----------
+  const DEFAULT_TEAM_PASSWORD = "1234";
+
+  async function loadTeams(){
+    const stored = await storageGet("teams-list");
+    if(stored && stored.length){ teams = stored; }
+    else {
+      const defaultHash = await sha256Hex(DEFAULT_TEAM_PASSWORD);
+      teams = [
+        { id: "team-men", name: "남자팀", passwordHash: defaultHash },
+        { id: "team-women", name: "여자팀", passwordHash: defaultHash },
+      ];
+      await storageSet("teams-list", teams);
+    }
+  }
+  function saveTeams(){ storageSet("teams-list", teams); }
+
+  function renderTeamSelectScreen(){
+    const listEl = document.getElementById("teamSelectList");
+    const addRow = document.getElementById("addTeamRow");
+    listEl.innerHTML = "";
+    teams.forEach(t => {
+      const row = document.createElement("div");
+      row.className = "team-select-row";
+      const btn = document.createElement("button");
+      btn.className = "team-select-btn";
+      btn.textContent = t.name + (t.passwordHash ? " 🔒" : "");
+      btn.onclick = () => attemptEnterTeam(t);
+      row.appendChild(btn);
+      if(isAdmin){
+        const pwBtn = document.createElement("button");
+        pwBtn.className = "icon-btn"; pwBtn.textContent = "🔑"; pwBtn.title = "팀 비밀번호 설정";
+        pwBtn.onclick = () => setTeamPassword(t);
+        const renameBtn = document.createElement("button");
+        renameBtn.className = "icon-btn"; renameBtn.textContent = "✎"; renameBtn.title = "팀 이름 변경";
+        renameBtn.onclick = () => renameTeam(t);
+        const delBtn = document.createElement("button");
+        delBtn.className = "icon-btn"; delBtn.textContent = "×"; delBtn.title = "팀 삭제";
+        delBtn.onclick = () => deleteTeam(t);
+        row.appendChild(pwBtn); row.appendChild(renameBtn); row.appendChild(delBtn);
+      }
+      listEl.appendChild(row);
+    });
+    addRow.style.display = isAdmin ? "flex" : "none";
+  }
+
+  async function setTeamPassword(t){
+    if(!isAdmin) return;
+    const pw = prompt(
+      `"${t.name}" 팀의 비밀번호를 입력하세요.\n현재 상태: ${t.passwordHash ? "설정됨" : "설정 안 됨(누구나 입장 가능)"}\n빈 칸으로 저장하면 비밀번호가 없어져 누구나 입장할 수 있게 됩니다.`,
+      ""
+    );
+    if(pw === null) return;
+    if(pw.trim() === ""){
+      t.passwordHash = null;
+    } else {
+      t.passwordHash = await sha256Hex(pw.trim());
+    }
+    saveTeams();
+    renderTeamSelectScreen();
+  }
+
+  function renameTeam(t){
+    if(!isAdmin) return;
+    const name = prompt("새 팀 이름을 입력하세요:", t.name);
+    if(name === null || name.trim() === "") return;
+    t.name = name.trim();
+    saveTeams();
+    renderTeamSelectScreen();
+  }
+  function deleteTeam(t){
+    if(!isAdmin) return;
+    if(!confirm(`"${t.name}" 팀을 목록에서 삭제할까요? (저장된 전술 데이터는 지워지지 않고 남아있어요)`)) return;
+    teams = teams.filter(x => x.id !== t.id);
+    saveTeams();
+    renderTeamSelectScreen();
+  }
+  document.getElementById("addTeamBtn").onclick = async () => {
+    if(!isAdmin) return;
+    const nameInput = document.getElementById("newTeamName");
+    const pwInput = document.getElementById("newTeamPassword");
+    const name = nameInput.value.trim();
+    if(!name) return;
+    const pw = pwInput.value.trim();
+    const passwordHash = pw ? await sha256Hex(pw) : null;
+    teams.push({ id: "team-" + Date.now().toString(36), name, passwordHash });
+    saveTeams();
+    nameInput.value = ""; pwInput.value = "";
+    renderTeamSelectScreen();
+  };
+  document.getElementById("newTeamName").addEventListener("keydown", (e) => {
+    if(e.key === "Enter") document.getElementById("addTeamBtn").click();
+  });
+  document.getElementById("newTeamPassword").addEventListener("keydown", (e) => {
+    if(e.key === "Enter") document.getElementById("addTeamBtn").click();
+  });
+
+  // ---------- 팀 입장 (비밀번호 필요 시 확인 후 입장, 관리자는 통과) ----------
+  let pendingTeam = null;
+  const teamPasswordModal = document.getElementById("teamPasswordModal");
+  const teamPasswordInput = document.getElementById("teamPasswordInput");
+  const teamPasswordHint = document.getElementById("teamPasswordHint");
+
+  function attemptEnterTeam(t){
+    if(isAdmin || !t.passwordHash){ enterTeam(t.id); return; }
+    pendingTeam = t;
+    teamPasswordInput.value = "";
+    teamPasswordHint.textContent = "";
+    document.getElementById("teamPasswordTitle").textContent = t.name + " 비밀번호";
+    teamPasswordModal.classList.add("show");
+    setTimeout(() => teamPasswordInput.focus(), 50);
+  }
+  function closeTeamPasswordModal(){ teamPasswordModal.classList.remove("show"); pendingTeam = null; }
+  document.getElementById("teamPasswordCancel").onclick = closeTeamPasswordModal;
+  teamPasswordModal.addEventListener("click", (e) => { if(e.target === teamPasswordModal) closeTeamPasswordModal(); });
+  teamPasswordInput.addEventListener("keydown", (e) => { if(e.key === "Enter") document.getElementById("teamPasswordSubmit").click(); });
+  document.getElementById("teamPasswordSubmit").onclick = async () => {
+    if(!pendingTeam) return;
+    const hash = await sha256Hex(teamPasswordInput.value);
+    if(hash === pendingTeam.passwordHash){
+      const teamId = pendingTeam.id;
+      closeTeamPasswordModal();
+      enterTeam(teamId);
+    } else {
+      teamPasswordHint.textContent = "비밀번호가 올바르지 않습니다.";
+      teamPasswordHint.style.color = "#e08a7d";
+    }
+  };
+
+  function enterTeam(teamId){
+    currentTeam = teamId;
+    const team = teams.find(x => x.id === teamId);
+    document.getElementById("currentTeamLabel").textContent = team ? team.name : "";
+    document.getElementById("teamSelectScreen").style.display = "none";
+    document.getElementById("mainScreen").style.display = "block";
+    mode = "9"; rotation = 0; situationKey = "serve";
+    manualPos = {}; oppManualPos = {}; subManualPos = {}; manualAngle = {}; oppManualAngle = {}; subManualAngle = {}; ballPos = { ...DEFAULT_BALL };
+    courtZoom = 1;
+    updateCourtSize();
+    loadAllForMode();
+  }
+  document.getElementById("backToTeamsBtn").onclick = () => {
+    document.getElementById("mainScreen").style.display = "none";
+    document.getElementById("teamSelectScreen").style.display = "block";
+    currentTeam = null;
+    renderTeamSelectScreen();
+  };
+
+  function hidePreloadOverlay(){
+    const el = document.getElementById("preloadOverlay");
+    if(el){ el.classList.add("hide"); setTimeout(() => el.remove(), 350); }
+  }
+  // 네트워크가 느려 초기화가 오래 걸려도 화면이 계속 로딩 상태로만 남지 않도록 안전장치를 둔다.
+  setTimeout(hidePreloadOverlay, 6000);
+
+  (async function init(){
+    try{
+      await initAdminAuth();
+      await loadTeams();
+      updateAdminBar();
+      renderTeamSelectScreen();
+    }catch(e){
+      console.error("초기화 중 오류:", e);
+    }finally{
+      hidePreloadOverlay();
+    }
+  })();
+})();
+</script>
+
+
+</body></html>
